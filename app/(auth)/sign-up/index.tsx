@@ -5,22 +5,24 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Yup from 'yup';
 import { useDispatch } from 'react-redux';
-import { setToken, setRole } from '../../store/slices/authSlice';
+import { setToken, setRole, setName, setEmail } from '../../store/slices/authSlice';
 import { Button } from '../../components/button';
 import { Title } from '../../components/title';
 import { useRouter } from 'expo-router';
 import { styles } from './style';
 
 const schema = Yup.object({
+    name: Yup.string().required('Digite seu nome'),
     email: Yup.string().email('Email inválido').required('Digite seu e-mail'),
     password: Yup.string().min(6, 'Mínimo 6 caracteres').required('Digite sua senha'),
-    role: Yup.string().oneOf(['student', 'instructor']).required(),
+    role: Yup.string().oneOf(['member', 'coach']).required(),
 });
 
 type FormData = {
+    name: string;
     email: string;
     password: string;
-    role: 'student' | 'instructor';
+    role: 'member' | 'coach';
 };
 
 export default function SignUpScreen() {
@@ -34,25 +36,30 @@ export default function SignUpScreen() {
     } = useForm<FormData>({
         resolver: yupResolver(schema),
         defaultValues: {
+            name: '',
             email: '',
             password: '',
-            role: 'student',
+            role: 'member',
         },
     });
 
     const onSubmit = async (data: FormData) => {
         try {
             const receivedToken = 'TOKEN_EXEMPLO';
-
+                
+            dispatch(setName(data.name))
+            dispatch(setEmail(data.email))
             dispatch(setToken(receivedToken));
             dispatch(setRole(data.role));
 
+            await AsyncStorage.setItem('@name', data.name);
+            await AsyncStorage.setItem('@email', data.email);
             await AsyncStorage.setItem('@token', receivedToken);
             await AsyncStorage.setItem('@role', data.role);
 
-            if (data.role === 'student') {
+            if (data.role === 'member') {
                 router.replace('/(private)/(member)/dashboard');
-            } else if (data.role === 'instructor') {
+            } else if (data.role === 'coach') {
                 router.replace('/(private)/(coach)/dashboard');
             }
         } catch (error) {
@@ -74,6 +81,25 @@ export default function SignUpScreen() {
 
                 <Title text="CONNECT WORKOUT" fontSize={18} marginBottom={8} />
                 <Title text="Registre-se" fontSize={24} marginBottom={16} />
+
+                <Controller
+                    control={control}
+                    name="name"
+                    render={({ field: { onChange, value } }) => (
+                        <TextInput
+                            placeholder="Digite seu nome"
+                            style={[
+                                styles.input,
+                                errors.email && styles.inputError,
+                            ]}
+                            onChangeText={onChange}
+                            value={value}
+                            keyboardType="default"
+                            autoCapitalize="none"
+                        />
+                    )}
+                />
+                {errors.name && <Text style={styles.errorText}>{errors.name.message}</Text>}
 
                 <Controller
                     control={control}
@@ -117,8 +143,8 @@ export default function SignUpScreen() {
                     name="role"
                     render={({ field: { onChange, value } }) => (
                         <Picker selectedValue={value} onValueChange={onChange} style={styles.picker}>
-                            <Picker.Item label="Aluno" value="student" />
-                            <Picker.Item label="Instrutor" value="instructor" />
+                            <Picker.Item label="Aluno" value="member" />
+                            <Picker.Item label="Instrutor" value="coach" />
                         </Picker>
                     )}
                 />

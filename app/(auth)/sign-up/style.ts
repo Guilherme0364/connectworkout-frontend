@@ -1,7 +1,7 @@
 import { StyleSheet } from 'react-native';
 import { Theme } from '../../styles/theme';
 
-export const styles = StyleSheet.create({
+const styles = StyleSheet.create({
 	container: {
 		padding: 20,
 		flex: 1,
@@ -54,3 +54,5 @@ export const styles = StyleSheet.create({
 		color: Theme.screen.primaryColor,
 	},
 });
+
+export { styles };

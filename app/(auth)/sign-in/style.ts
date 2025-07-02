@@ -18,7 +18,7 @@ const styles = StyleSheet.create({
   },
 
   input: {
-    backgroundColor: Theme.screen.inputBackgroundColor,
+    backgroundColor: Theme.components.inputBackground,
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -46,4 +46,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default styles;
+export { styles };

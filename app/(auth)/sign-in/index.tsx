@@ -5,7 +5,7 @@ import * as yup from 'yup';
 import { Title } from '../../components/title';
 import { Button } from '../../components/button';
 import { Link } from 'expo-router';
-import styles from './style';
+import { styles } from './style';
 
 const schema = yup.object().shape({
     email: yup.string().email('Digite um e-mail válido').required('E-mail obrigatório'),

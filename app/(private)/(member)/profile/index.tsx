@@ -1,14 +1,10 @@
 import {
-    View,
-    Text,
     TextInput,
     KeyboardAvoidingView,
     Platform,
     SafeAreaView,
 } from 'react-native';
 import { useForm, Controller } from 'react-hook-form';
-import { useSelector } from 'react-redux';
-import { RootState } from '../../../store';
 import { Button } from '../../../components/button';
 import { Title } from '../../../components/title';
 import styles from './style';
@@ -19,9 +15,10 @@ type FormData = {
 };
 
 export default function ProfileScreen() {
-    // Obtém os dados do usuário do Redux, "!" é usado para garantir que o valor não seja nulo
-    const name = useSelector((state: RootState) => state.auth.name)!;
-    const email = useSelector((state: RootState) => state.auth.email)!;
+    // For now, using placeholder values since user profile data isn't in the AuthContext yet
+    // This would typically come from a separate user profile API or be added to the AuthContext
+    const name = 'Nome do Usuário';
+    const email = 'usuario@exemplo.com';
 
     const {
         control,

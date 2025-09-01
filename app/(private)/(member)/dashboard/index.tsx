@@ -1,10 +1,8 @@
 import { Text, View } from "react-native";
-import { useSelector } from "react-redux";
-import { RootState } from "../../../store";
+import { useAuth } from "../../../hooks/useAuth";
 
 export default function Index() {
-    const { role } = useSelector((state: RootState) => state.auth);
-    const { name, email } = useSelector((state: RootState) => state.auth);
+    const { role } = useAuth();
 
     if (role !== "student") {
         return (

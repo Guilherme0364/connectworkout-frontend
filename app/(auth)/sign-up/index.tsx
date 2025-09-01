@@ -1,11 +1,9 @@
-import { View, TextInput, Text, Image, SafeAreaView, KeyboardAvoidingView, Platform } from 'react-native';
+import { TextInput, Text, Image, SafeAreaView, KeyboardAvoidingView, Platform } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { Controller, useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Yup from 'yup';
-import { useDispatch } from 'react-redux';
-import { setToken, setRole, setName, setEmail } from '../../store/slices/authSlice';
+import { useAuth } from '../../hooks/useAuth';
 import { Button } from '../../components/button';
 import { Title } from '../../components/title';
 import { useRouter } from 'expo-router';
@@ -15,18 +13,18 @@ const schema = Yup.object({
     name: Yup.string().required('Digite seu nome'),
     email: Yup.string().email('Email inválido').required('Digite seu e-mail'),
     password: Yup.string().min(6, 'Mínimo 6 caracteres').required('Digite sua senha'),
-    role: Yup.string().oneOf(['member', 'coach']).required(),
+    role: Yup.string().oneOf(['student', 'instructor']).required(),
 });
 
 type FormData = {
     name: string;
     email: string;
     password: string;
-    role: 'member' | 'coach';
+    role: 'student' | 'instructor';
 };
 
 export default function SignUpScreen() {
-    const dispatch = useDispatch();
+    const { login } = useAuth();
     const router = useRouter();
 
     const {
@@ -39,29 +37,18 @@ export default function SignUpScreen() {
             name: '',
             email: '',
             password: '',
-            role: 'member',
+            role: 'student',
         },
     });
 
     const onSubmit = async (data: FormData) => {
         try {
             const receivedToken = 'TOKEN_EXEMPLO';
-                
-            dispatch(setName(data.name))
-            dispatch(setEmail(data.email))
-            dispatch(setToken(receivedToken));
-            dispatch(setRole(data.role));
-
-            await AsyncStorage.setItem('@name', data.name);
-            await AsyncStorage.setItem('@email', data.email);
-            await AsyncStorage.setItem('@token', receivedToken);
-            await AsyncStorage.setItem('@role', data.role);
-
-            if (data.role === 'member') {
-                router.replace('/(private)/(member)/dashboard');
-            } else if (data.role === 'coach') {
-                router.replace('/(private)/(coach)/dashboard');
-            }
+            
+            await login(receivedToken, data.role);
+            
+            // Navigation will be handled automatically by the index.tsx middleware
+            router.replace('/');
         } catch (error) {
             console.error('Erro ao registrar:', error);
         }
@@ -143,8 +130,8 @@ export default function SignUpScreen() {
                     name="role"
                     render={({ field: { onChange, value } }) => (
                         <Picker selectedValue={value} onValueChange={onChange} style={styles.picker}>
-                            <Picker.Item label="Aluno" value="member" />
-                            <Picker.Item label="Instrutor" value="coach" />
+                            <Picker.Item label="Aluno" value="student" />
+                            <Picker.Item label="Instrutor" value="instructor" />
                         </Picker>
                     )}
                 />

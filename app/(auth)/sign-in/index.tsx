@@ -4,7 +4,8 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import { Title } from '../../components/title';
 import { Button } from '../../components/button';
-import { Link } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
+import { useAuth } from '../../hooks/useAuth';
 import { styles } from './style';
 
 const schema = yup.object().shape({
@@ -18,6 +19,9 @@ type FormData = {
 }
 
 const SignInScreen = () => {
+    const { login } = useAuth();
+    const router = useRouter();
+    
     const {
         control,
         handleSubmit,
@@ -26,9 +30,20 @@ const SignInScreen = () => {
         resolver: yupResolver(schema),
     });
 
-    const onSubmit = (data: FormData) => {
-        console.log('Login:', data);
-        // Aqui você chama a função de login do contexto ou Redux
+    const onSubmit = async (data: FormData) => {
+        try {
+            // For demo purposes, using mock authentication
+            // In a real app, this would make an API call to authenticate
+            const mockToken = 'DEMO_TOKEN_123';
+            const mockRole = 'student'; // This would come from the API response
+            
+            await login(mockToken, mockRole);
+            
+            // Navigation will be handled by the index.tsx middleware
+            router.replace('/');
+        } catch (error) {
+            console.error('Login failed:', error);
+        }
     };
 
     return (

@@ -11,7 +11,7 @@ interface Props {
 	marginBottom?: number;
 }
 
-export const Title = ({ text, color, fontSize, textAlign, marginTop, marginBottom }: Props) => {
+const Title = ({ text, color, fontSize, textAlign, marginTop, marginBottom }: Props) => {
 	return (
 		<Text 
 		style={[styles.text, { color: color }, { fontSize: fontSize }, { textAlign: textAlign }, { marginTop: marginTop }, {marginBottom: marginBottom}]}>
@@ -19,4 +19,6 @@ export const Title = ({ text, color, fontSize, textAlign, marginTop, marginBotto
 		</Text>
 	);
 };
+
+export default Title;
 

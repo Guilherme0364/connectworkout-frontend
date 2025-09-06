@@ -28,4 +28,4 @@ const Button = forwardRef<View, Props>(({ children, color, text, marginTop, marg
 
 Button.displayName = 'Button';
 
-export { Button }
+export default Button;

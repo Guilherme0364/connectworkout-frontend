@@ -15,6 +15,7 @@ export interface AuthContextType extends AuthState {
   logout: () => Promise<void>;
   setCredentials: (token: string, role: UserRole) => Promise<void>;
   checkAuthState: () => Promise<void>;
+  clearDevStorage: () => Promise<void>;
 }
 
 type AuthAction =
@@ -148,17 +149,31 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
+  const clearDevStorage = async () => {
+    try {
+      await AsyncStorage.multiRemove([STORAGE_KEYS.TOKEN, STORAGE_KEYS.ROLE]);
+      dispatch({ type: 'CLEAR_CREDENTIALS' });
+      console.log('Development storage cleared successfully');
+    } catch (error) {
+      console.error('Failed to clear development storage:', error);
+    }
+  };
+
   const checkAuthState = useCallback(async () => {
     dispatch({ type: 'SET_LOADING', payload: true });
     
     try {
       const credentials = await getStoredCredentials();
       
+      // FORCE CLEAR FOR DEBUGGING - Remove cached authentication
       if (credentials) {
-        dispatch({ type: 'RESTORE_CREDENTIALS', payload: credentials });
-      } else {
-        dispatch({ type: 'CLEAR_CREDENTIALS' });
+        console.log('Found cached credentials, clearing them:', credentials);
+        await removeCredentials(); // Clear stored credentials
       }
+      
+      // Always start with cleared credentials until proper login
+      dispatch({ type: 'CLEAR_CREDENTIALS' });
+      console.log('Authentication state cleared - user must login');
     } catch (error) {
       console.error('Failed to check auth state:', error);
       dispatch({ type: 'CLEAR_CREDENTIALS' });
@@ -175,6 +190,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     logout,
     setCredentials,
     checkAuthState,
+    clearDevStorage,
   };
 
   return (

@@ -4,29 +4,45 @@ import { Redirect } from 'expo-router';
 import { useAuth } from './hooks/useAuth';
 
 export default function Index() {
-	const { isAuthenticated, isLoading, role } = useAuth();
+	const { isAuthenticated, isLoading, role, token } = useAuth();
 
 	useEffect(() => {
-		if (!isLoading && isAuthenticated && role) {
-			console.log('User authenticated with role:', role);
+		console.log('=== INDEX ROUTE DEBUG ===');
+		console.log('isLoading:', isLoading);
+		console.log('isAuthenticated:', isAuthenticated);
+		console.log('role:', role);
+		console.log('token:', token);
+		console.log('========================');
+		
+		if (!isLoading) {
+			if (isAuthenticated && role && token) {
+				console.log('✅ User authenticated with role:', role, 'token:', token);
+			} else {
+				console.log('❌ User not authenticated, redirecting to login');
+				console.log('  - isAuthenticated:', isAuthenticated);
+				console.log('  - role:', role);
+				console.log('  - token:', token);
+			}
 		}
-	}, [isLoading, isAuthenticated, role]);
+	}, [isLoading, isAuthenticated, role, token]);
 
+	// Show loading spinner while checking authentication
 	if (isLoading) {
+		console.log('⏳ Showing loading screen...');
 		return (
-			<View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-				<ActivityIndicator size="large" />
+			<View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F9FAFB' }}>
+				<ActivityIndicator size="large" color="#3B82F6" />
 			</View>
 		);
 	}
 
-	if (isAuthenticated && role) {
-		if (role === 'student') {
-			return <Redirect href="/(private)/(member)/dashboard" />;
-		} else if (role === 'instructor') {
-			return <Redirect href="/(private)/(coach)/dashboard/dashboard" />;
-		}
+	// Only redirect to private area if user has all required auth data
+	if (isAuthenticated && role && token) {
+		console.log('🚀 Redirecting to dashboard with role:', role);
+		return <Redirect href="/(private)/(tabs)" />;
 	}
 
+	// Default to login screen for unauthenticated users
+	console.log('🔒 Redirecting to login screen');
 	return <Redirect href="/(auth)/sign-in" />;
 }

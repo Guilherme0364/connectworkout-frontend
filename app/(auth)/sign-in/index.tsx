@@ -2,8 +2,8 @@ import { View, TextInput, Text, Image, SafeAreaView, KeyboardAvoidingView, Platf
 import { useForm, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
-import { Title } from '../../components/title';
-import { Button } from '../../components/button';
+import Title from '../../components/title';
+import Button from '../../components/button';
 import { Link, useRouter } from 'expo-router';
 import { useAuth } from '../../hooks/useAuth';
 import { styles } from './style';
@@ -19,7 +19,7 @@ type FormData = {
 }
 
 const SignInScreen = () => {
-    const { login } = useAuth();
+    const { login, clearDevStorage } = useAuth();
     const router = useRouter();
     
     const {
@@ -32,17 +32,29 @@ const SignInScreen = () => {
 
     const onSubmit = async (data: FormData) => {
         try {
-            // For demo purposes, using mock authentication
-            // In a real app, this would make an API call to authenticate
-            const mockToken = 'DEMO_TOKEN_123';
-            const mockRole = 'student'; // This would come from the API response
+            // TODO: Replace with actual API call
+            // Example: const response = await authService.login(data.email, data.password);
             
-            await login(mockToken, mockRole);
+            // For now, validate credentials and reject invalid attempts
+            if (!data.email || !data.password) {
+                throw new Error('Email and password are required');
+            }
+            
+            // Mock validation - in development, require specific credentials
+            if (data.email === 'student@test.com' && data.password === 'password123') {
+                await login('valid_token_student', 'student');
+            } else if (data.email === 'instructor@test.com' && data.password === 'password123') {
+                await login('valid_token_instructor', 'instructor');
+            } else {
+                throw new Error('Invalid email or password');
+            }
             
             // Navigation will be handled by the index.tsx middleware
             router.replace('/');
         } catch (error) {
             console.error('Login failed:', error);
+            // TODO: Show error message to user
+            alert(error instanceof Error ? error.message : 'Login failed');
         }
     };
 
@@ -61,6 +73,21 @@ const SignInScreen = () => {
                 <Title text="CONNECT WORKOUT" fontSize={12} />
 
                 <Title text="Entrar" fontSize={20} />
+
+                {/* Development Info */}
+                {__DEV__ && (
+                    <View style={{ backgroundColor: '#FEF3C7', padding: 12, borderRadius: 8, marginVertical: 16 }}>
+                        <Text style={{ fontSize: 12, color: '#92400E', textAlign: 'center', marginBottom: 4 }}>
+                            Credenciais de teste:
+                        </Text>
+                        <Text style={{ fontSize: 10, color: '#92400E', textAlign: 'center' }}>
+                            Aluno: student@test.com / password123
+                        </Text>
+                        <Text style={{ fontSize: 10, color: '#92400E', textAlign: 'center' }}>
+                            Instrutor: instructor@test.com / password123
+                        </Text>
+                    </View>
+                )}
 
                 <Text style={styles.label}>Email</Text>
                 <Controller
@@ -110,6 +137,16 @@ const SignInScreen = () => {
                         Registre-se
                     </Link>
                 </View>
+
+                {/* Development Debug Button */}
+                {__DEV__ && (
+                    <Button
+                        text="Clear Storage (Dev)"
+                        color="#EF4444"
+                        marginTop={20}
+                        onPress={clearDevStorage}
+                    />
+                )}
             </KeyboardAvoidingView>
         </SafeAreaView>
     );

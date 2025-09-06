@@ -4,8 +4,8 @@ import { Controller, useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as Yup from 'yup';
 import { useAuth } from '../../hooks/useAuth';
-import { Button } from '../../components/button';
-import { Title } from '../../components/title';
+import Button from '../../components/button';
+import Title from '../../components/title';
 import { useRouter } from 'expo-router';
 import { styles } from './style';
 
@@ -43,14 +43,29 @@ export default function SignUpScreen() {
 
     const onSubmit = async (data: FormData) => {
         try {
-            const receivedToken = 'TOKEN_EXEMPLO';
+            // TODO: Replace with actual API call
+            // Example: const response = await authService.register(data.name, data.email, data.password, data.role);
             
-            await login(receivedToken, data.role);
+            // Validate all required fields
+            if (!data.name || !data.email || !data.password || !data.role) {
+                throw new Error('All fields are required');
+            }
             
-            // Navigation will be handled automatically by the index.tsx middleware
-            router.replace('/');
+            // Mock registration validation
+            if (data.email.includes('@')) {
+                // Generate a mock token for valid registration
+                const token = `token_${data.role}_${Date.now()}`;
+                await login(token, data.role);
+                
+                // Navigation will be handled automatically by the index.tsx middleware
+                router.replace('/');
+            } else {
+                throw new Error('Please enter a valid email address');
+            }
         } catch (error) {
-            console.error('Erro ao registrar:', error);
+            console.error('Registration failed:', error);
+            // TODO: Show error message to user
+            alert(error instanceof Error ? error.message : 'Registration failed');
         }
     };
 

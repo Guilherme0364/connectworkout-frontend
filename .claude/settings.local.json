@@ -7,7 +7,9 @@
       "Bash(npm run lint)",
       "Bash(npm run type-check:*)",
       "Bash(npm run typecheck:*)",
-      "Bash(npx expo start:*)"
+      "Bash(npx expo start:*)",
+      "Read(//c/Users/guilh/OneDrive/Área de Trabalho/TCC/connectworkout-backend/**)",
+      "Read(//c/Users/guilh/Desktop/TCC/**)"
     ],
     "deny": [],
     "ask": []

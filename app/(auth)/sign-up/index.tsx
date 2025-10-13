@@ -1,13 +1,15 @@
-import { TextInput, Text, Image, SafeAreaView, KeyboardAvoidingView, Platform } from 'react-native';
+import { TextInput, Text, Image, SafeAreaView, KeyboardAvoidingView, Platform, ActivityIndicator, View } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { Controller, useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as Yup from 'yup';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuthContext } from '../../contexts/AuthContext';
 import Button from '../../components/button';
 import Title from '../../components/title';
 import { useRouter } from 'expo-router';
 import { styles } from './style';
+import { useState } from 'react';
+import { UserType } from '../../types/api.types';
 
 const schema = Yup.object({
     name: Yup.string().required('Digite seu nome'),
@@ -24,8 +26,10 @@ type FormData = {
 };
 
 export default function SignUpScreen() {
-    const { login } = useAuth();
+    const { register } = useAuthContext();
     const router = useRouter();
+    const [isLoading, setIsLoading] = useState(false);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
     const {
         control,
@@ -43,29 +47,26 @@ export default function SignUpScreen() {
 
     const onSubmit = async (data: FormData) => {
         try {
-            // TODO: Replace with actual API call
-            // Example: const response = await authService.register(data.name, data.email, data.password, data.role);
-            
-            // Validate all required fields
-            if (!data.name || !data.email || !data.password || !data.role) {
-                throw new Error('All fields are required');
-            }
-            
-            // Mock registration validation
-            if (data.email.includes('@')) {
-                // Generate a mock token for valid registration
-                const token = `token_${data.role}_${Date.now()}`;
-                await login(token, data.role);
-                
-                // Navigation will be handled automatically by the index.tsx middleware
-                router.replace('/');
-            } else {
-                throw new Error('Please enter a valid email address');
-            }
-        } catch (error) {
+            setIsLoading(true);
+            setErrorMessage(null);
+
+            // Usar a API real através do AuthContext
+            await register({
+                name: data.name,
+                email: data.email,
+                password: data.password,
+                userType: data.role === 'instructor' ? UserType.Instructor : UserType.Student,
+            });
+
+            // Navigation will be handled automatically by the index.tsx middleware
+            router.replace('/');
+        } catch (error: any) {
             console.error('Registration failed:', error);
-            // TODO: Show error message to user
-            alert(error instanceof Error ? error.message : 'Registration failed');
+            const message = error?.message || 'Falha no registro. Tente novamente.';
+            setErrorMessage(message);
+            alert(message);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -83,6 +84,15 @@ export default function SignUpScreen() {
 
                 <Title text="CONNECT WORKOUT" fontSize={18} marginBottom={8} />
                 <Title text="Registre-se" fontSize={24} marginBottom={16} />
+
+                {/* Error Message */}
+                {errorMessage && (
+                    <View style={{ backgroundColor: '#FEE2E2', padding: 12, borderRadius: 8, marginBottom: 16 }}>
+                        <Text style={{ fontSize: 12, color: '#991B1B', textAlign: 'center' }}>
+                            {errorMessage}
+                        </Text>
+                    </View>
+                )}
 
                 <Controller
                     control={control}
@@ -152,7 +162,11 @@ export default function SignUpScreen() {
                 />
                 {errors.role && <Text style={styles.errorText}>{errors.role.message}</Text>}
 
-                <Button text="Registre-se" marginTop={16} onPress={handleSubmit(onSubmit)} />
+                {isLoading ? (
+                    <ActivityIndicator size="large" color="#A9F13C" style={{ marginTop: 16 }} />
+                ) : (
+                    <Button text="Registre-se" marginTop={16} onPress={handleSubmit(onSubmit)} />
+                )}
 
                 <Text style={styles.linkText}>
                     Já tem uma conta? <Text style={styles.linkHighlight}>Entrar</Text>

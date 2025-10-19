@@ -23,7 +23,7 @@ export class InstructorService {
       const response = await apiClient.get<StudentSummaryDto[]>(
         API_ENDPOINTS.INSTRUCTORS.GET_STUDENTS
       );
-      return response.data;
+      return response;
     } catch (error) {
       console.error('Get students error:', error);
       throw error;
@@ -39,7 +39,7 @@ export class InstructorService {
       const response = await apiClient.get<UserDto>(
         API_ENDPOINTS.INSTRUCTORS.GET_STUDENT_DETAILS(studentId)
       );
-      return response.data;
+      return response;
     } catch (error) {
       console.error('Get student details error:', error);
       throw error;
@@ -47,17 +47,17 @@ export class InstructorService {
   }
 
   /**
-   * Connect with a student
+   * Connect with a student by email or ID
    * Requires authentication and Instructor role
+   * @param data - Student email or ID
    */
-  static async connectWithStudent(studentId: number): Promise<{ message: string }> {
+  static async connectWithStudent(data: ConnectStudentDto): Promise<{ message: string }> {
     try {
-      const data: ConnectStudentDto = { studentId };
       const response = await apiClient.post<{ message: string }>(
         API_ENDPOINTS.INSTRUCTORS.CONNECT_WITH_STUDENT,
         data
       );
-      return response.data;
+      return response;
     } catch (error) {
       console.error('Connect with student error:', error);
       throw error;
@@ -73,7 +73,7 @@ export class InstructorService {
       const response = await apiClient.delete<{ message: string }>(
         API_ENDPOINTS.INSTRUCTORS.REMOVE_STUDENT(studentId)
       );
-      return response.data;
+      return response;
     } catch (error) {
       console.error('Remove student error:', error);
       throw error;

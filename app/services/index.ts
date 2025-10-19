@@ -8,4 +8,6 @@ export { default as apiClient, setAuthToken, setRefreshToken, clearTokens, getTo
 export { default as AuthService } from './auth.service';
 export { default as UserService } from './user.service';
 export { default as InstructorService } from './instructor.service';
+export { default as StudentService } from './student.service';
 export { default as ExerciseService } from './exercise.service';
+export { default as WorkoutService } from './workout.service';

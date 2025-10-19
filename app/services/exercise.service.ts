@@ -18,13 +18,9 @@ export class ExerciseService {
    */
   static async searchExercises(name: string): Promise<ExerciseDbModel[]> {
     try {
-      const response = await apiClient.get<ExerciseDbModel[]>(
-        API_ENDPOINTS.EXERCISES.SEARCH,
-        {
-          params: { name },
-        }
-      );
-      return response.data;
+      const url = `${API_ENDPOINTS.EXERCISES.SEARCH}?name=${encodeURIComponent(name)}`;
+      const response = await apiClient.get<ExerciseDbModel[]>(url);
+      return response;
     } catch (error) {
       console.error('Search exercises error:', error);
       throw error;
@@ -40,7 +36,7 @@ export class ExerciseService {
       const response = await apiClient.get<ExerciseDbModel>(
         API_ENDPOINTS.EXERCISES.GET_BY_ID(id)
       );
-      return response.data;
+      return response;
     } catch (error) {
       console.error('Get exercise by ID error:', error);
       throw error;
@@ -56,7 +52,7 @@ export class ExerciseService {
       const response = await apiClient.get<string[]>(
         API_ENDPOINTS.EXERCISES.GET_BODY_PARTS
       );
-      return response.data;
+      return response;
     } catch (error) {
       console.error('Get body parts error:', error);
       throw error;
@@ -74,7 +70,7 @@ export class ExerciseService {
       const response = await apiClient.get<ExerciseDbModel[]>(
         API_ENDPOINTS.EXERCISES.GET_BY_BODY_PART(bodyPart)
       );
-      return response.data;
+      return response;
     } catch (error) {
       console.error('Get exercises by body part error:', error);
       throw error;
@@ -90,7 +86,7 @@ export class ExerciseService {
       const response = await apiClient.get<string[]>(
         API_ENDPOINTS.EXERCISES.GET_TARGETS
       );
-      return response.data;
+      return response;
     } catch (error) {
       console.error('Get targets error:', error);
       throw error;
@@ -108,7 +104,7 @@ export class ExerciseService {
       const response = await apiClient.get<ExerciseDbModel[]>(
         API_ENDPOINTS.EXERCISES.GET_BY_TARGET(target)
       );
-      return response.data;
+      return response;
     } catch (error) {
       console.error('Get exercises by target error:', error);
       throw error;
@@ -124,7 +120,7 @@ export class ExerciseService {
       const response = await apiClient.get<string[]>(
         API_ENDPOINTS.EXERCISES.GET_EQUIPMENTS
       );
-      return response.data;
+      return response;
     } catch (error) {
       console.error('Get equipments error:', error);
       throw error;
@@ -142,7 +138,7 @@ export class ExerciseService {
       const response = await apiClient.get<ExerciseDbModel[]>(
         API_ENDPOINTS.EXERCISES.GET_BY_EQUIPMENT(equipment)
       );
-      return response.data;
+      return response;
     } catch (error) {
       console.error('Get exercises by equipment error:', error);
       throw error;

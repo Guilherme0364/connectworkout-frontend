@@ -69,7 +69,8 @@ export interface UpdateUserDto {
 // ============================================================================
 
 export interface ConnectStudentDto {
-  studentId: number;
+  email?: string;       // Student's email (option 1)
+  studentId?: number;   // Student's ID (option 2)
 }
 
 export interface StudentSummaryDto {
@@ -81,6 +82,70 @@ export interface StudentSummaryDto {
   activeWorkoutName: string;
   completedExercisesToday: number;
   totalExercisesToday: number;
+}
+
+// ============================================================================
+// Student DTOs
+// ============================================================================
+
+export enum TrainerRequestStatus {
+  Pending = 'pending',
+  Accepted = 'accepted',
+  Rejected = 'rejected',
+}
+
+export interface TrainerDto {
+  id: number;
+  name: string;
+  email: string;
+  age?: number;
+  gender?: Gender;
+  description: string;
+  studentCount: number;
+  credentials?: string;
+  photoUrl?: string;
+}
+
+export interface TrainerRequestDto {
+  id: number;
+  trainerId: number;
+  trainerName: string;
+  trainerEmail: string;
+  trainerStudentCount: number;
+  trainerCredentials?: string;
+  trainerPhotoUrl?: string;
+  status: TrainerRequestStatus;
+  createdAt: string;
+}
+
+export interface AcceptTrainerDto {
+  trainerId: number;
+}
+
+export interface StudentProfileDto {
+  id: number;
+  name: string;
+  email: string;
+  age?: number;
+  gender?: Gender;
+  description: string;
+  cpf?: string;
+  phone?: string;
+  photoUrl?: string;
+  hasTrainer: boolean;
+  trainerId?: number;
+}
+
+export interface UpdateStudentProfileDto {
+  name?: string;
+  age?: number;
+  gender?: Gender;
+  description?: string;
+  cpf?: string;
+  phone?: string;
+  currentPassword?: string;
+  newPassword?: string;
+  photoUrl?: string;
 }
 
 // ============================================================================
@@ -123,4 +188,97 @@ export interface ApiError {
   message: string;
   status?: number;
   errors?: Record<string, string[]>;
+}
+
+// ============================================================================
+// Workout DTOs
+// ============================================================================
+
+export enum DayOfWeek {
+  Sunday = 0,
+  Monday = 1,
+  Tuesday = 2,
+  Wednesday = 3,
+  Thursday = 4,
+  Friday = 5,
+  Saturday = 6,
+}
+
+export const DayOfWeekLabels: Record<DayOfWeek, string> = {
+  [DayOfWeek.Sunday]: 'Domingo',
+  [DayOfWeek.Monday]: 'Segunda',
+  [DayOfWeek.Tuesday]: 'Terça',
+  [DayOfWeek.Wednesday]: 'Quarta',
+  [DayOfWeek.Thursday]: 'Quinta',
+  [DayOfWeek.Friday]: 'Sexta',
+  [DayOfWeek.Saturday]: 'Sábado',
+};
+
+export interface Workout {
+  id: number;
+  name: string;
+  createdAt: string;
+  isActive: boolean;
+  workoutDays: WorkoutDay[];
+}
+
+export interface WorkoutSummary {
+  id: number;
+  name: string;
+  createdAt: string;
+  isActive: boolean;
+  daysCount: number;
+  exercisesCount: number;
+}
+
+export interface WorkoutDay {
+  id: number;
+  dayOfWeek: DayOfWeek;
+  exercises: Exercise[];
+}
+
+export interface Exercise {
+  id: number;
+  exerciseDbId: string;
+  name: string;
+  bodyPart: string;
+  equipment: string;
+  gifUrl: string;
+  sets: string;
+  repetitions: string;
+  weight?: number;
+  restSeconds?: number;
+  order: number;
+  notes: string;
+}
+
+// Request DTOs
+export interface CreateWorkoutRequest {
+  studentId: number;
+  name: string;
+}
+
+export interface AddWorkoutDayRequest {
+  dayOfWeek: DayOfWeek;
+}
+
+export interface AddExerciseRequest {
+  exerciseDbId: string;
+  name: string;
+  bodyPart: string;
+  equipment: string;
+  gifUrl: string;
+  sets: string;
+  repetitions: string;
+  weight?: number;
+  restSeconds?: number;
+  notes?: string;
+}
+
+export interface UpdateExerciseRequest {
+  sets?: string;
+  repetitions?: string;
+  weight?: number;
+  restSeconds?: number;
+  notes?: string;
 }

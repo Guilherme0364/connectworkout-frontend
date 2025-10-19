@@ -30,17 +30,17 @@ export class AuthService {
         data
       );
 
-      console.log('✅ Registration response received:', response.data);
+      console.log('✅ Registration response received:', response);
 
       // Store tokens if registration is successful
-      if (response.data.success && response.data.accessToken) {
-        await setAuthToken(response.data.accessToken);
-        if (response.data.refreshToken) {
-          await setRefreshToken(response.data.refreshToken);
+      if (response.success && response.accessToken) {
+        await setAuthToken(response.accessToken);
+        if (response.refreshToken) {
+          await setRefreshToken(response.refreshToken);
         }
       }
 
-      return response.data;
+      return response;
     } catch (error: any) {
       console.error('❌ Registration error:', {
         message: error?.message,
@@ -63,14 +63,14 @@ export class AuthService {
       );
 
       // Store tokens if login is successful
-      if (response.data.success && response.data.accessToken) {
-        await setAuthToken(response.data.accessToken);
-        if (response.data.refreshToken) {
-          await setRefreshToken(response.data.refreshToken);
+      if (response.success && response.accessToken) {
+        await setAuthToken(response.accessToken);
+        if (response.refreshToken) {
+          await setRefreshToken(response.refreshToken);
         }
       }
 
-      return response.data;
+      return response;
     } catch (error) {
       console.error('Login error:', error);
       throw error;

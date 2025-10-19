@@ -1,11 +1,11 @@
 /**
- * API Client
+ * API Client using native fetch API
  *
- * Axios instance configured with interceptors for authentication and error handling
+ * Simple and efficient HTTP client that works across all platforms
  */
 
-import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform, Alert } from 'react-native';
 import { API_CONFIG } from '../config/api.config';
 import { ApiError } from '../types/api.types';
 
@@ -16,123 +16,159 @@ const STORAGE_KEYS = {
 } as const;
 
 /**
- * Create axios instance
+ * Helper function to get auth token
  */
-const apiClient: AxiosInstance = axios.create({
-  baseURL: API_CONFIG.BASE_URL,
-  timeout: API_CONFIG.TIMEOUT,
-  headers: API_CONFIG.HEADERS,
-  // Force axios to use XMLHttpRequest adapter for web compatibility
-  adapter: 'xhr',
-});
-
-/**
- * Request Interceptor
- * Adds authentication token to requests
- */
-apiClient.interceptors.request.use(
-  async (config: InternalAxiosRequestConfig) => {
-    try {
-      console.log('🚀 Making request:', {
-        method: config.method?.toUpperCase(),
-        url: config.url,
-        baseURL: config.baseURL,
-        fullURL: `${config.baseURL}${config.url}`,
-        headers: config.headers,
-        data: config.data
-      });
-
-      try {
-        const token = await AsyncStorage.getItem(STORAGE_KEYS.TOKEN);
-        if (token && config.headers) {
-          config.headers.Authorization = `Bearer ${token}`;
-        }
-      } catch (storageError) {
-        // AsyncStorage errors shouldn't block the request
-        console.warn('AsyncStorage error (non-blocking):', storageError);
-      }
-
-      return config;
-    } catch (error) {
-      console.error('❌ Request interceptor error:', error);
-      return config;
-    }
-  },
-  (error) => {
-    console.error('❌ Request interceptor error:', error);
-    return Promise.reject(error);
+async function getAuthToken(): Promise<string | null> {
+  try {
+    return await AsyncStorage.getItem(STORAGE_KEYS.TOKEN);
+  } catch (error) {
+    console.warn('Failed to get auth token:', error);
+    return null;
   }
-);
+}
 
 /**
- * Response Interceptor
- * Handles common response scenarios and errors
+ * Make an HTTP request using fetch
  */
-apiClient.interceptors.response.use(
-  (response: AxiosResponse) => {
+async function request<T = any>(
+  endpoint: string,
+  options: RequestInit = {}
+): Promise<T> {
+  const url = `${API_CONFIG.BASE_URL}${endpoint}`;
+
+  console.log('🚀 Making request:', {
+    method: options.method || 'GET',
+    url: url,
+  });
+
+  try {
+    // Get auth token
+    const token = await getAuthToken();
+
+    // Prepare headers
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    };
+
+    // Add auth token if available
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    // Make the request
+    const response = await fetch(url, {
+      ...options,
+      headers,
+    });
+
     console.log('✅ Response received:', {
       status: response.status,
       statusText: response.statusText,
-      data: response.data
+      url: url,
     });
-    // Return successful response
-    return response;
-  },
-  async (error: AxiosError) => {
-    console.error('❌ Response error:', {
-      message: error.message,
-      code: error.code,
-      response: error.response?.data,
-      status: error.response?.status,
-      config: {
-        url: error.config?.url,
-        method: error.config?.method,
-        baseURL: error.config?.baseURL
-      }
-    });
-    const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean };
 
-    // Handle 401 Unauthorized errors
-    if (error.response?.status === 401) {
-      // Check if we've already tried to refresh
-      if (!originalRequest._retry) {
-        originalRequest._retry = true;
+    // Parse response body
+    let data: any;
+    const contentType = response.headers.get('content-type');
 
-        try {
-          // Try to refresh the token
-          const refreshToken = await AsyncStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
+    if (contentType && contentType.includes('application/json')) {
+      data = await response.json();
+    } else {
+      data = await response.text();
+    }
 
-          if (refreshToken) {
-            // Note: Implement token refresh logic here when backend supports it
-            // For now, we'll just clear the tokens and redirect to login
-            await AsyncStorage.multiRemove([STORAGE_KEYS.TOKEN, STORAGE_KEYS.REFRESH_TOKEN]);
+    // Handle errors
+    if (!response.ok) {
+      // Special handling for 401 Unauthorized (session expired)
+      if (response.status === 401) {
+        console.warn('🚫 401 Unauthorized - Session expired');
 
-            // You can emit an event here to notify the app to redirect to login
-            // or use a navigation service
-          }
-        } catch (refreshError) {
-          console.error('Token refresh failed:', refreshError);
-          // Clear tokens
-          await AsyncStorage.multiRemove([STORAGE_KEYS.TOKEN, STORAGE_KEYS.REFRESH_TOKEN]);
+        // Clear tokens from storage
+        await clearTokens();
+
+        // Show platform-specific alert
+        if (Platform.OS === 'web') {
+          window.alert('Your session expired, please login again');
+        } else {
+          Alert.alert(
+            'Session Expired',
+            'Your session has expired. Please login again.',
+            [{ text: 'OK' }]
+          );
         }
+
+        // Throw error (AuthContext will handle redirect since tokens are cleared)
+        const error: ApiError = {
+          message: 'Session expired',
+          status: 401,
+        };
+        throw error;
       }
+
+      // Handle other errors normally
+      const error: ApiError = {
+        message: data?.message || response.statusText || 'Request failed',
+        status: response.status,
+        errors: data?.errors,
+      };
+
+      console.error('❌ Request failed:', error);
+      throw error;
     }
 
-    // Handle 403 Forbidden errors
-    if (error.response?.status === 403) {
-      console.error('Access forbidden:', error.response.data);
+    return data as T;
+  } catch (error: any) {
+    console.error('❌ Request error:', {
+      message: error.message,
+      url: url,
+    });
+
+    // If it's already an ApiError, rethrow it
+    if (error.status !== undefined) {
+      throw error;
     }
 
-    // Transform error to our ApiError format
+    // Otherwise, create a new ApiError
     const apiError: ApiError = {
-      message: error.response?.data?.message || error.message || 'An unexpected error occurred',
-      status: error.response?.status,
-      errors: error.response?.data?.errors,
+      message: error.message || 'Network request failed',
+      status: undefined,
     };
-
-    return Promise.reject(apiError);
+    throw apiError;
   }
-);
+}
+
+/**
+ * HTTP methods
+ */
+export const apiClient = {
+  get: <T = any>(url: string, options?: RequestInit) =>
+    request<T>(url, { ...options, method: 'GET' }),
+
+  post: <T = any>(url: string, data?: any, options?: RequestInit) =>
+    request<T>(url, {
+      ...options,
+      method: 'POST',
+      body: data ? JSON.stringify(data) : undefined,
+    }),
+
+  put: <T = any>(url: string, data?: any, options?: RequestInit) =>
+    request<T>(url, {
+      ...options,
+      method: 'PUT',
+      body: data ? JSON.stringify(data) : undefined,
+    }),
+
+  patch: <T = any>(url: string, data?: any, options?: RequestInit) =>
+    request<T>(url, {
+      ...options,
+      method: 'PATCH',
+      body: data ? JSON.stringify(data) : undefined,
+    }),
+
+  delete: <T = any>(url: string, options?: RequestInit) =>
+    request<T>(url, { ...options, method: 'DELETE' }),
+};
 
 /**
  * Helper function to set the auth token

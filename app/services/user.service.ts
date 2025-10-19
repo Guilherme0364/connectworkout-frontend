@@ -22,7 +22,7 @@ export class UserService {
       const response = await apiClient.get<UserDto>(
         API_ENDPOINTS.USERS.PROFILE
       );
-      return response.data;
+      return response;
     } catch (error) {
       console.error('Get profile error:', error);
       throw error;
@@ -39,7 +39,7 @@ export class UserService {
         API_ENDPOINTS.USERS.UPDATE_PROFILE,
         data
       );
-      return response.data;
+      return response;
     } catch (error) {
       console.error('Update profile error:', error);
       throw error;
@@ -70,7 +70,7 @@ export class UserService {
           },
         }
       );
-      return response.data;
+      return response;
     } catch (error) {
       console.error('Search users error:', error);
       throw error;
@@ -86,7 +86,7 @@ export class UserService {
       const response = await apiClient.get<UserDto>(
         API_ENDPOINTS.USERS.GET_BY_ID(id)
       );
-      return response.data;
+      return response;
     } catch (error) {
       console.error('Get user by ID error:', error);
       throw error;

@@ -88,6 +88,18 @@ export const API_ENDPOINTS = {
     REMOVE_STUDENT: (studentId: number) => `/api/instructors/students/${studentId}`,
   },
 
+  // Student endpoints
+  STUDENTS: {
+    GET_PROFILE: '/api/students/profile',
+    UPDATE_PROFILE: '/api/students/profile',
+    GET_TRAINER_REQUESTS: '/api/students/trainer-requests',
+    GET_TRAINER_DETAILS: (trainerId: number) => `/api/students/trainers/${trainerId}`,
+    GET_CURRENT_TRAINER: '/api/students/current-trainer',
+    ACCEPT_TRAINER: (trainerId: number) => `/api/students/accept-trainer/${trainerId}`,
+    REJECT_TRAINER: (trainerId: number) => `/api/students/reject-trainer/${trainerId}`,
+    DISCONNECT_TRAINER: '/api/students/disconnect-trainer',
+  },
+
   // Exercise endpoints
   EXERCISES: {
     SEARCH: '/api/exercises/search',
@@ -98,5 +110,29 @@ export const API_ENDPOINTS = {
     GET_BY_TARGET: (target: string) => `/api/exercises/target/${target}`,
     GET_EQUIPMENTS: '/api/exercises/equipments',
     GET_BY_EQUIPMENT: (equipment: string) => `/api/exercises/equipment/${equipment}`,
+  },
+
+  // Workout endpoints
+  WORKOUTS: {
+    // Coach - Workout CRUD
+    GET_STUDENT_WORKOUTS: (studentId: number) => `/api/workouts/student/${studentId}`,
+    GET_WORKOUT_DETAILS: (workoutId: number) => `/api/workouts/${workoutId}`,
+    CREATE_WORKOUT: '/api/workouts',
+    UPDATE_WORKOUT: (workoutId: number) => `/api/workouts/${workoutId}`,
+    DELETE_WORKOUT: (workoutId: number) => `/api/workouts/${workoutId}`,
+
+    // Coach - Workout Day Management
+    ADD_WORKOUT_DAY: (workoutId: number) => `/api/workouts/${workoutId}/days`,
+    DELETE_WORKOUT_DAY: (workoutId: number, dayId: number) => `/api/workouts/${workoutId}/days/${dayId}`,
+
+    // Coach - Exercise Management
+    ADD_EXERCISE: (workoutId: number, dayId: number) => `/api/workouts/${workoutId}/days/${dayId}/exercises`,
+    UPDATE_EXERCISE: (workoutId: number, dayId: number, exerciseId: number) => `/api/workouts/${workoutId}/days/${dayId}/exercises/${exerciseId}`,
+    DELETE_EXERCISE: (workoutId: number, dayId: number, exerciseId: number) => `/api/workouts/${workoutId}/days/${dayId}/exercises/${exerciseId}`,
+    REORDER_EXERCISES: (workoutId: number, dayId: number) => `/api/workouts/${workoutId}/days/${dayId}/exercises/reorder`,
+
+    // Student - View Workouts
+    GET_MY_WORKOUTS: '/api/students/workouts',
+    GET_MY_ACTIVE_WORKOUT: '/api/students/workouts/active',
   },
 } as const;

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useEffect, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useCallback, useMemo, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthService, setAuthToken, setRefreshToken, clearTokens } from '../services';
 import { LoginDto, RegisterUserDto, UserDto, UserType } from '../types/api.types';
@@ -259,21 +259,37 @@ export function AuthProvider({ children }: AuthProviderProps) {
       console.error('Failed to check auth state:', error);
       dispatch({ type: 'CLEAR_CREDENTIALS' });
     }
-  }, []);
+  }, []); 
 
   useEffect(() => {
-    checkAuthState();
-  }, [checkAuthState]);
+    // TEMPORARY: One-time force clear for testing
+    // Set this to true to clear storage once, then set back to false
+    const FORCE_CLEAR_ONCE = false; // Change to true to clear, then back to false
 
-  const contextValue: AuthContextType = {
-    ...state,
-    login,
-    register,
-    logout,
-    setCredentials,
-    checkAuthState,
-    clearDevStorage,
-  };
+    if (FORCE_CLEAR_ONCE && __DEV__) {
+      console.log('🧹 Force clearing storage (FORCE_CLEAR_ONCE = true)');
+      removeCredentials().then(() => {
+        console.log('✅ Storage cleared! Set FORCE_CLEAR_ONCE back to false in AuthContext.tsx');
+        checkAuthState();
+      });
+    } else {
+      checkAuthState();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
+
+  const contextValue: AuthContextType = useMemo(
+    () => ({
+      ...state,
+      login,
+      register,
+      logout,
+      setCredentials,
+      checkAuthState,
+      clearDevStorage,
+    }),
+    [state, login, register, logout, setCredentials, checkAuthState, clearDevStorage]
+  );
 
   return (
     <AuthContext.Provider value={contextValue}>

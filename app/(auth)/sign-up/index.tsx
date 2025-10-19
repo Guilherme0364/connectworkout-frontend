@@ -15,6 +15,13 @@ const schema = Yup.object({
     name: Yup.string().required('Digite seu nome'),
     email: Yup.string().email('Email inválido').required('Digite seu e-mail'),
     password: Yup.string().min(6, 'Mínimo 6 caracteres').required('Digite sua senha'),
+    age: Yup.number()
+        .typeError('Digite uma idade válida')
+        .positive('Idade deve ser positiva')
+        .integer('Idade deve ser um número inteiro')
+        .min(1, 'Idade mínima é 1')
+        .max(120, 'Idade máxima é 120')
+        .required('Digite sua idade'),
     role: Yup.string().oneOf(['student', 'instructor']).required(),
 });
 
@@ -22,6 +29,7 @@ type FormData = {
     name: string;
     email: string;
     password: string;
+    age: number;
     role: 'student' | 'instructor';
 };
 
@@ -41,6 +49,7 @@ export default function SignUpScreen() {
             name: '',
             email: '',
             password: '',
+            age: undefined,
             role: 'student',
         },
     });
@@ -55,6 +64,7 @@ export default function SignUpScreen() {
                 name: data.name,
                 email: data.email,
                 password: data.password,
+                age: data.age,
                 userType: data.role === 'instructor' ? UserType.Instructor : UserType.Student,
             });
 
@@ -131,6 +141,25 @@ export default function SignUpScreen() {
                     )}
                 />
                 {errors.email && <Text style={styles.errorText}>{errors.email.message}</Text>}
+
+                <Controller
+                    control={control}
+                    name="age"
+                    render={({ field: { onChange, value } }) => (
+                        <TextInput
+                            placeholder="Digite sua idade"
+                            style={[
+                                styles.input,
+                                errors.age && styles.inputError,
+                            ]}
+                            onChangeText={(text) => onChange(text ? parseInt(text) : undefined)}
+                            value={value?.toString() || ''}
+                            keyboardType="numeric"
+                            maxLength={3}
+                        />
+                    )}
+                />
+                {errors.age && <Text style={styles.errorText}>{errors.age.message}</Text>}
 
                 <Controller
                     control={control}

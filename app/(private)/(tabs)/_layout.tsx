@@ -1,3 +1,10 @@
+/**
+ * Main Tabs Layout (Simplified)
+ *
+ * Only shows Home tab that redirects to role-specific section
+ * and a shared Profile tab
+ */
+
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../hooks/useAuth';
@@ -5,52 +12,9 @@ import { useAuth } from '../../hooks/useAuth';
 export default function TabsLayout() {
 	const { role } = useAuth();
 
-	const getTabBarIcon = (routeName: string, color: string, size: number) => {
-		let iconName: keyof typeof Ionicons.glyphMap = 'home-outline';
-
-		switch (routeName) {
-			case 'index':
-				iconName = role === 'student' ? 'home-outline' : 'grid-outline';
-				break;
-			case 'progress':
-				iconName = role === 'student' ? 'trending-up-outline' : 'analytics-outline';
-				break;
-			case 'schedule':
-				iconName = 'calendar-outline';
-				break;
-			case 'students':
-				iconName = 'people-outline';
-				break;
-			case 'profile':
-				iconName = 'person-outline';
-				break;
-			default:
-				iconName = 'home-outline';
-		}
-
-		return <Ionicons name={iconName} size={size} color={color} />;
-	};
-
-	const getTabTitle = (routeName: string) => {
-		switch (routeName) {
-			case 'index':
-				return role === 'student' ? 'Home' : 'Dashboard';
-			case 'progress':
-				return role === 'student' ? 'Progress' : 'Analytics';
-			case 'schedule':
-				return 'Schedule';
-			case 'students':
-				return 'Students';
-			case 'profile':
-				return 'Profile';
-			default:
-				return 'Home';
-		}
-	};
-
 	return (
 		<Tabs
-			screenOptions={({ route }) => ({
+			screenOptions={{
 				headerShown: false,
 				tabBarActiveTintColor: '#3B82F6',
 				tabBarInactiveTintColor: '#9CA3AF',
@@ -66,39 +30,31 @@ export default function TabsLayout() {
 					fontSize: 12,
 					fontWeight: '500',
 				},
-				tabBarIcon: ({ color, size }) => getTabBarIcon(route.name, color, size),
-			})}
+			}}
 		>
+			{/* Home - Redirects to role-specific dashboard */}
 			<Tabs.Screen
 				name="index"
 				options={{
-					title: getTabTitle('index'),
+					title: role === 'student' ? 'Home' : 'Dashboard',
+					tabBarIcon: ({ color, size }) => (
+						<Ionicons
+							name={role === 'student' ? 'home-outline' : 'grid-outline'}
+							size={size}
+							color={color}
+						/>
+					),
 				}}
 			/>
-			<Tabs.Screen
-				name="progress"
-				options={{
-					title: getTabTitle('progress'),
-				}}
-			/>
-			<Tabs.Screen
-				name="schedule"
-				options={{
-					title: getTabTitle('schedule'),
-				}}
-			/>
-			{role === 'instructor' && (
-				<Tabs.Screen
-					name="students"
-					options={{
-						title: getTabTitle('students'),
-					}}
-				/>
-			)}
+
+			{/* Profile - Shared */}
 			<Tabs.Screen
 				name="profile"
 				options={{
-					title: getTabTitle('profile'),
+					title: 'Perfil',
+					tabBarIcon: ({ color, size }) => (
+						<Ionicons name="person-outline" size={size} color={color} />
+					),
 				}}
 			/>
 		</Tabs>

@@ -1,301 +1,243 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
 	View,
 	Text,
 	StyleSheet,
 	ScrollView,
 	SafeAreaView,
-	Pressable,
-	Switch,
+	TouchableOpacity,
+	ActivityIndicator,
+	Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../hooks/useAuth';
-import DashboardCard from '../../components/dashboard/DashboardCard';
+import { useStudent } from '../../contexts/StudentContext';
+import { useRouter } from 'expo-router';
+import EmptyState from '../../components/EmptyState';
 
 export default function Profile() {
 	const { role, logout } = useAuth();
+	const router = useRouter();
+	const {
+		hasTrainer,
+		currentTrainer,
+		profile,
+		isLoading,
+		loadCurrentTrainer,
+		loadProfile,
+		disconnectTrainer,
+	} = useStudent();
+
+	useEffect(() => {
+		if (role === 'student') {
+			loadProfile();
+			loadCurrentTrainer();
+		}
+	}, [role]);
+
+	const handleDisconnectTrainer = () => {
+		if (!currentTrainer) return;
+
+		Alert.alert(
+			'Cancelar Conexão',
+			`Tem certeza que deseja cancelar a conexão com ${currentTrainer.name}?`,
+			[
+				{ text: 'Cancelar', style: 'cancel' },
+				{
+					text: 'Confirmar',
+					style: 'destructive',
+					onPress: async () => {
+						try {
+							await disconnectTrainer();
+							Alert.alert('Conexão cancelada', 'Você não está mais conectado a este personal.');
+						} catch (err: any) {
+							Alert.alert('Erro', err.message || 'Falha ao cancelar conexão');
+						}
+					},
+				},
+			]
+		);
+	};
 
 	const handleLogout = async () => {
-		try {
-			await logout();
-		} catch (error) {
-			console.error('Logout failed:', error);
-		}
-	};
-
-	const mockProfile = {
-		name: role === 'student' ? 'John Student' : 'Sarah Coach',
-		email: role === 'student' ? 'john@example.com' : 'sarah@example.com',
-		joinDate: '2024-01-01',
-		avatar: role === 'student' ? '👨‍💼' : '👩‍💼',
-		stats: role === 'student' 
-			? {
-				workoutsCompleted: 45,
-				streak: 12,
-				totalHours: 67,
-			}
-			: {
-				studentsCoached: 23,
-				sessionsCompleted: 156,
-				rating: 4.8,
+		Alert.alert('Sair', 'Tem certeza que deseja sair?', [
+			{ text: 'Cancelar', style: 'cancel' },
+			{
+				text: 'Sair',
+				style: 'destructive',
+				onPress: async () => {
+					try {
+						await logout();
+					} catch (error) {
+						console.error('Logout failed:', error);
+					}
+				},
 			},
+		]);
 	};
 
-	const ProfileSection = ({ title, children }: { title: string; children: React.ReactNode }) => (
-		<DashboardCard title={title} icon="settings-outline" color="#6B7280">
-			{children}
-		</DashboardCard>
-	);
+	// Student Profile View
+	if (role === 'student') {
+		if (isLoading && !profile) {
+			return (
+				<SafeAreaView style={styles.container}>
+					<View style={styles.loadingContainer}>
+						<ActivityIndicator size="large" color="#C4FF0D" />
+						<Text style={styles.loadingText}>Carregando...</Text>
+					</View>
+				</SafeAreaView>
+			);
+		}
 
-	const ProfileItem = ({ 
-		icon, 
-		title, 
-		subtitle, 
-		onPress, 
-		showArrow = true,
-		rightComponent 
-	}: {
-		icon: keyof typeof Ionicons.glyphMap;
-		title: string;
-		subtitle?: string;
-		onPress?: () => void;
-		showArrow?: boolean;
-		rightComponent?: React.ReactNode;
-	}) => (
-		<Pressable style={styles.profileItem} onPress={onPress} disabled={!onPress}>
-			<View style={styles.profileItemLeft}>
-				<View style={styles.profileItemIcon}>
-					<Ionicons name={icon} size={20} color="#6B7280" />
-				</View>
-				<View style={styles.profileItemText}>
-					<Text style={styles.profileItemTitle}>{title}</Text>
-					{subtitle && <Text style={styles.profileItemSubtitle}>{subtitle}</Text>}
-				</View>
-			</View>
-			<View style={styles.profileItemRight}>
-				{rightComponent}
-				{showArrow && onPress && (
-					<Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
-				)}
-			</View>
-		</Pressable>
-	);
+		return (
+			<SafeAreaView style={styles.container}>
+				<ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+					{/* Header */}
+					<View style={styles.header}>
+						<Text style={styles.title}>Meu Perfil</Text>
+					</View>
+
+					{/* User Info Card */}
+					<View style={styles.card}>
+						<View style={styles.userInfo}>
+							<View style={styles.avatar}>
+								<Ionicons name="person" size={40} color="#6B7280" />
+							</View>
+							<View style={styles.userDetails}>
+								<Text style={styles.userName}>{profile?.name || 'Aluno'}</Text>
+								<Text style={styles.userEmail}>{profile?.email || ''}</Text>
+							</View>
+						</View>
+					</View>
+
+					{/* Trainer Section */}
+					<View style={styles.sectionHeader}>
+						<Text style={styles.sectionTitle}>Meu Personal</Text>
+					</View>
+
+					{hasTrainer && currentTrainer ? (
+						<View style={styles.card}>
+							<View style={styles.trainerHeader}>
+								<View style={styles.trainerAvatar}>
+									<Ionicons name="person" size={32} color="#6B7280" />
+								</View>
+								<View style={styles.trainerInfo}>
+									<Text style={styles.trainerName}>{currentTrainer.name}</Text>
+									<Text style={styles.trainerEmail}>{currentTrainer.email}</Text>
+									{currentTrainer.studentCount !== undefined && (
+										<Text style={styles.trainerStats}>
+											{currentTrainer.studentCount}{' '}
+											{currentTrainer.studentCount === 1 ? 'aluno' : 'alunos'}
+										</Text>
+									)}
+								</View>
+							</View>
+
+							{currentTrainer.description && (
+								<View style={styles.trainerDetail}>
+									<Text style={styles.detailLabel}>Sobre:</Text>
+									<Text style={styles.detailValue}>{currentTrainer.description}</Text>
+								</View>
+							)}
+
+							<TouchableOpacity
+								style={styles.disconnectButton}
+								onPress={handleDisconnectTrainer}
+							>
+								<Text style={styles.disconnectButtonText}>Cancelar conexão com personal</Text>
+							</TouchableOpacity>
+						</View>
+					) : (
+						<View style={styles.card}>
+							<EmptyState
+								icon="person-add-outline"
+								title="Nenhum personal conectado"
+								description="Aguarde seu personal adicionar os treinos e começe agora!"
+								iconColor="#9CA3AF"
+							/>
+							<TouchableOpacity
+								style={styles.primaryButton}
+								onPress={() => router.push('/student/personal-requests')}
+							>
+								<Text style={styles.primaryButtonText}>Ver Solicitações</Text>
+							</TouchableOpacity>
+						</View>
+					)}
+
+					{/* Quick Actions */}
+					<View style={styles.sectionHeader}>
+						<Text style={styles.sectionTitle}>Ações</Text>
+					</View>
+
+					<View style={styles.card}>
+						<TouchableOpacity
+							style={styles.actionItem}
+							onPress={() => router.push('/student/personal-requests')}
+						>
+							<View style={styles.actionLeft}>
+								<View style={styles.actionIcon}>
+									<Ionicons name="people-outline" size={20} color="#6B7280" />
+								</View>
+								<Text style={styles.actionText}>Solicitações de Personal</Text>
+							</View>
+							<Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+						</TouchableOpacity>
+
+						<TouchableOpacity style={styles.actionItem} onPress={handleLogout}>
+							<View style={styles.actionLeft}>
+								<View style={[styles.actionIcon, styles.actionIconDanger]}>
+									<Ionicons name="log-out-outline" size={20} color="#EF4444" />
+								</View>
+								<Text style={[styles.actionText, styles.actionTextDanger]}>Sair</Text>
+							</View>
+							<Ionicons name="chevron-forward" size={20} color="#EF4444" />
+						</TouchableOpacity>
+					</View>
+
+					<View style={styles.bottomSpacing} />
+				</ScrollView>
+			</SafeAreaView>
+		);
+	}
+
+	// Instructor Profile View (simplified)
 
 	return (
 		<SafeAreaView style={styles.container}>
 			<ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
 				<View style={styles.header}>
-					<Text style={styles.title}>Profile</Text>
-					<Text style={styles.subtitle}>Manage your account settings</Text>
+					<Text style={styles.title}>Meu Perfil</Text>
 				</View>
 
-				{/* Profile Header */}
-				<DashboardCard title="" color="#3B82F6">
-					<View style={styles.profileHeader}>
-						<View style={styles.avatarContainer}>
-							<Text style={styles.avatarText}>{mockProfile.avatar}</Text>
+				{/* User Info Card */}
+				<View style={styles.card}>
+					<View style={styles.userInfo}>
+						<View style={styles.avatar}>
+							<Ionicons name="person" size={40} color="#6B7280" />
 						</View>
-						<View style={styles.profileInfo}>
-							<Text style={styles.profileName}>{mockProfile.name}</Text>
-							<Text style={styles.profileEmail}>{mockProfile.email}</Text>
-							<View style={styles.roleBadge}>
-								<Text style={styles.roleText}>
-									{role === 'student' ? 'Student' : 'Coach'}
-								</Text>
+						<View style={styles.userDetails}>
+							<Text style={styles.userName}>Instrutor</Text>
+							<Text style={styles.userEmail}>instrutor@example.com</Text>
+						</View>
+					</View>
+				</View>
+
+				{/* Quick Actions */}
+				<View style={styles.sectionHeader}>
+					<Text style={styles.sectionTitle}>Ações</Text>
+				</View>
+
+				<View style={styles.card}>
+					<TouchableOpacity style={styles.actionItem} onPress={handleLogout}>
+						<View style={styles.actionLeft}>
+							<View style={[styles.actionIcon, styles.actionIconDanger]}>
+								<Ionicons name="log-out-outline" size={20} color="#EF4444" />
 							</View>
+							<Text style={[styles.actionText, styles.actionTextDanger]}>Sair</Text>
 						</View>
-						<Pressable style={styles.editButton}>
-							<Ionicons name="pencil" size={20} color="#3B82F6" />
-						</Pressable>
-					</View>
-				</DashboardCard>
-
-				{/* Stats Overview */}
-				<DashboardCard
-					title={role === 'student' ? 'Your Stats' : 'Coaching Stats'}
-					icon="bar-chart-outline"
-					color="#10B981"
-				>
-					<View style={styles.statsContainer}>
-						{role === 'student' ? (
-							<>
-								<View style={styles.statItem}>
-									<Text style={styles.statValue}>{mockProfile.stats.workoutsCompleted}</Text>
-									<Text style={styles.statLabel}>Workouts Completed</Text>
-								</View>
-								<View style={styles.statItem}>
-									<Text style={styles.statValue}>{mockProfile.stats.streak}</Text>
-									<Text style={styles.statLabel}>Day Streak</Text>
-								</View>
-								<View style={styles.statItem}>
-									<Text style={styles.statValue}>{mockProfile.stats.totalHours}h</Text>
-									<Text style={styles.statLabel}>Total Hours</Text>
-								</View>
-							</>
-						) : (
-							<>
-								<View style={styles.statItem}>
-									<Text style={styles.statValue}>{mockProfile.stats.studentsCoached}</Text>
-									<Text style={styles.statLabel}>Students Coached</Text>
-								</View>
-								<View style={styles.statItem}>
-									<Text style={styles.statValue}>{mockProfile.stats.sessionsCompleted}</Text>
-									<Text style={styles.statLabel}>Sessions Completed</Text>
-								</View>
-								<View style={styles.statItem}>
-									<Text style={styles.statValue}>⭐ {mockProfile.stats.rating}</Text>
-									<Text style={styles.statLabel}>Average Rating</Text>
-								</View>
-							</>
-						)}
-					</View>
-				</DashboardCard>
-
-				{/* Account Settings */}
-				<ProfileSection title="Account">
-					<View style={styles.profileItems}>
-						<ProfileItem
-							icon="person-outline"
-							title="Personal Information"
-							subtitle="Name, email, phone"
-							onPress={() => console.log('Edit personal info')}
-						/>
-						<ProfileItem
-							icon="lock-closed-outline"
-							title="Security"
-							subtitle="Password, two-factor auth"
-							onPress={() => console.log('Security settings')}
-						/>
-						<ProfileItem
-							icon="card-outline"
-							title="Billing & Payments"
-							subtitle="Subscription, payment methods"
-							onPress={() => console.log('Billing settings')}
-						/>
-					</View>
-				</ProfileSection>
-
-				{/* App Settings */}
-				<ProfileSection title="App Settings">
-					<View style={styles.profileItems}>
-						<ProfileItem
-							icon="notifications-outline"
-							title="Notifications"
-							subtitle="Push notifications, reminders"
-							rightComponent={<Switch value={true} onValueChange={() => {}} />}
-							showArrow={false}
-						/>
-						<ProfileItem
-							icon="moon-outline"
-							title="Dark Mode"
-							subtitle="App appearance"
-							rightComponent={<Switch value={false} onValueChange={() => {}} />}
-							showArrow={false}
-						/>
-						<ProfileItem
-							icon="globe-outline"
-							title="Language"
-							subtitle="English"
-							onPress={() => console.log('Language settings')}
-						/>
-						<ProfileItem
-							icon="download-outline"
-							title="Data & Storage"
-							subtitle="Download data, manage storage"
-							onPress={() => console.log('Data settings')}
-						/>
-					</View>
-				</ProfileSection>
-
-				{/* Fitness Settings (Student only) */}
-				{role === 'student' && (
-					<ProfileSection title="Fitness Preferences">
-						<View style={styles.profileItems}>
-							<ProfileItem
-								icon="fitness-outline"
-								title="Goals & Preferences"
-								subtitle="Fitness goals, workout preferences"
-								onPress={() => console.log('Fitness goals')}
-							/>
-							<ProfileItem
-								icon="heart-outline"
-								title="Health Metrics"
-								subtitle="Weight, measurements, health data"
-								onPress={() => console.log('Health metrics')}
-							/>
-							<ProfileItem
-								icon="calendar-outline"
-								title="Workout Schedule"
-								subtitle="Preferred times, availability"
-								onPress={() => console.log('Workout schedule')}
-							/>
-						</View>
-					</ProfileSection>
-				)}
-
-				{/* Coach Settings (Coach only) */}
-				{role === 'instructor' && (
-					<ProfileSection title="Coaching Settings">
-						<View style={styles.profileItems}>
-							<ProfileItem
-								icon="school-outline"
-								title="Certifications"
-								subtitle="Manage certifications and credentials"
-								onPress={() => console.log('Certifications')}
-							/>
-							<ProfileItem
-								icon="time-outline"
-								title="Availability"
-								subtitle="Set available hours and days"
-								onPress={() => console.log('Availability')}
-							/>
-							<ProfileItem
-								icon="cash-outline"
-								title="Rates & Services"
-								subtitle="Session rates, service offerings"
-								onPress={() => console.log('Rates')}
-							/>
-						</View>
-					</ProfileSection>
-				)}
-
-				{/* Support & About */}
-				<ProfileSection title="Support & About">
-					<View style={styles.profileItems}>
-						<ProfileItem
-							icon="help-circle-outline"
-							title="Help Center"
-							subtitle="FAQs, guides, tutorials"
-							onPress={() => console.log('Help center')}
-						/>
-						<ProfileItem
-							icon="chatbubble-outline"
-							title="Contact Support"
-							subtitle="Get help from our team"
-							onPress={() => console.log('Contact support')}
-						/>
-						<ProfileItem
-							icon="document-text-outline"
-							title="Terms & Privacy"
-							subtitle="Legal information"
-							onPress={() => console.log('Terms & Privacy')}
-						/>
-						<ProfileItem
-							icon="information-circle-outline"
-							title="About"
-							subtitle="Version 1.0.0"
-							onPress={() => console.log('About')}
-						/>
-					</View>
-				</ProfileSection>
-
-				{/* Logout */}
-				<DashboardCard title="" color="#EF4444">
-					<Pressable style={styles.logoutButton} onPress={handleLogout}>
-						<Ionicons name="log-out-outline" size={20} color="#EF4444" />
-						<Text style={styles.logoutText}>Sign Out</Text>
-					</Pressable>
-				</DashboardCard>
+						<Ionicons name="chevron-forward" size={20} color="#EF4444" />
+					</TouchableOpacity>
+				</View>
 
 				<View style={styles.bottomSpacing} />
 			</ScrollView>
@@ -312,6 +254,16 @@ const styles = StyleSheet.create({
 		flex: 1,
 		paddingHorizontal: 16,
 	},
+	loadingContainer: {
+		flex: 1,
+		justifyContent: 'center',
+		alignItems: 'center',
+	},
+	loadingText: {
+		marginTop: 16,
+		fontSize: 16,
+		color: '#6B7280',
+	},
 	header: {
 		paddingTop: 16,
 		paddingBottom: 24,
@@ -320,83 +272,125 @@ const styles = StyleSheet.create({
 		fontSize: 28,
 		fontWeight: '700',
 		color: '#111827',
-		marginBottom: 4,
 	},
-	subtitle: {
-		fontSize: 16,
-		color: '#6B7280',
+	card: {
+		backgroundColor: '#FFFFFF',
+		borderRadius: 16,
+		padding: 20,
+		marginBottom: 16,
+		shadowColor: '#000',
+		shadowOffset: { width: 0, height: 2 },
+		shadowOpacity: 0.05,
+		shadowRadius: 8,
+		elevation: 2,
 	},
-	profileHeader: {
+	userInfo: {
 		flexDirection: 'row',
 		alignItems: 'center',
-		padding: 0,
 	},
-	avatarContainer: {
-		width: 60,
-		height: 60,
-		borderRadius: 30,
+	avatar: {
+		width: 64,
+		height: 64,
+		borderRadius: 32,
 		backgroundColor: '#F3F4F6',
 		justifyContent: 'center',
 		alignItems: 'center',
 		marginRight: 16,
 	},
-	avatarText: {
-		fontSize: 32,
-	},
-	profileInfo: {
+	userDetails: {
 		flex: 1,
 	},
-	profileName: {
+	userName: {
 		fontSize: 20,
 		fontWeight: '700',
 		color: '#111827',
 		marginBottom: 4,
 	},
-	profileEmail: {
+	userEmail: {
 		fontSize: 14,
 		color: '#6B7280',
-		marginBottom: 8,
 	},
-	roleBadge: {
-		backgroundColor: '#3B82F615',
-		paddingHorizontal: 8,
-		paddingVertical: 4,
-		borderRadius: 12,
-		alignSelf: 'flex-start',
+	sectionHeader: {
+		marginTop: 8,
+		marginBottom: 12,
 	},
-	roleText: {
-		fontSize: 12,
-		color: '#3B82F6',
+	sectionTitle: {
+		fontSize: 18,
 		fontWeight: '600',
-	},
-	editButton: {
-		padding: 8,
-		backgroundColor: '#F3F4F6',
-		borderRadius: 8,
-	},
-	statsContainer: {
-		flexDirection: 'row',
-		justifyContent: 'space-around',
-		marginTop: 16,
-	},
-	statItem: {
-		alignItems: 'center',
-	},
-	statValue: {
-		fontSize: 20,
-		fontWeight: '700',
 		color: '#111827',
+	},
+	trainerHeader: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		marginBottom: 16,
+	},
+	trainerAvatar: {
+		width: 56,
+		height: 56,
+		borderRadius: 28,
+		backgroundColor: '#F3F4F6',
+		justifyContent: 'center',
+		alignItems: 'center',
+		marginRight: 12,
+	},
+	trainerInfo: {
+		flex: 1,
+	},
+	trainerName: {
+		fontSize: 18,
+		fontWeight: '600',
+		color: '#111827',
+		marginBottom: 2,
+	},
+	trainerEmail: {
+		fontSize: 14,
+		color: '#6B7280',
+		marginBottom: 2,
+	},
+	trainerStats: {
+		fontSize: 12,
+		color: '#9CA3AF',
+	},
+	trainerDetail: {
+		marginBottom: 12,
+	},
+	detailLabel: {
+		fontSize: 12,
+		fontWeight: '500',
+		color: '#6B7280',
 		marginBottom: 4,
 	},
-	statLabel: {
-		fontSize: 12,
-		color: '#6B7280',
-		textAlign: 'center',
+	detailValue: {
+		fontSize: 14,
+		color: '#111827',
 	},
-	profileItems: {
+	disconnectButton: {
+		marginTop: 16,
+		paddingVertical: 12,
+		paddingHorizontal: 16,
+		borderRadius: 8,
+		borderWidth: 1,
+		borderColor: '#EF4444',
+		alignItems: 'center',
+	},
+	disconnectButtonText: {
+		fontSize: 14,
+		fontWeight: '600',
+		color: '#EF4444',
+	},
+	primaryButton: {
+		backgroundColor: '#C4FF0D',
+		paddingVertical: 14,
+		borderRadius: 12,
+		alignItems: 'center',
 		marginTop: 16,
 	},
-	profileItem: {
+	primaryButtonText: {
+		fontSize: 16,
+		fontWeight: '600',
+		color: '#1A1A1A',
+	},
+	actionItem: {
 		flexDirection: 'row',
 		alignItems: 'center',
 		justifyContent: 'space-between',
@@ -404,12 +398,12 @@ const styles = StyleSheet.create({
 		borderBottomWidth: 1,
 		borderBottomColor: '#F3F4F6',
 	},
-	profileItemLeft: {
+	actionLeft: {
 		flexDirection: 'row',
 		alignItems: 'center',
 		flex: 1,
 	},
-	profileItemIcon: {
+	actionIcon: {
 		width: 40,
 		height: 40,
 		borderRadius: 8,
@@ -418,36 +412,18 @@ const styles = StyleSheet.create({
 		alignItems: 'center',
 		marginRight: 12,
 	},
-	profileItemText: {
-		flex: 1,
+	actionIconDanger: {
+		backgroundColor: '#FEF2F2',
 	},
-	profileItemTitle: {
+	actionText: {
 		fontSize: 16,
 		fontWeight: '500',
 		color: '#111827',
-		marginBottom: 2,
 	},
-	profileItemSubtitle: {
-		fontSize: 14,
-		color: '#6B7280',
-	},
-	profileItemRight: {
-		flexDirection: 'row',
-		alignItems: 'center',
-	},
-	logoutButton: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		justifyContent: 'center',
-		paddingVertical: 12,
-	},
-	logoutText: {
-		fontSize: 16,
-		fontWeight: '600',
+	actionTextDanger: {
 		color: '#EF4444',
-		marginLeft: 8,
 	},
 	bottomSpacing: {
-		height: 20,
+		height: 24,
 	},
 });

@@ -6,25 +6,13 @@ import { useAuth } from './hooks/useAuth';
 export default function Index() {
 	const { isAuthenticated, isLoading, role, token } = useAuth();
 
+	// Debug logging only on mount to avoid infinite loops during logout
 	useEffect(() => {
-		console.log('=== INDEX ROUTE DEBUG ===');
-		console.log('isLoading:', isLoading);
-		console.log('isAuthenticated:', isAuthenticated);
-		console.log('role:', role);
-		console.log('token:', token);
-		console.log('========================');
-		
-		if (!isLoading) {
-			if (isAuthenticated && role && token) {
-				console.log('✅ User authenticated with role:', role, 'token:', token);
-			} else {
-				console.log('❌ User not authenticated, redirecting to login');
-				console.log('  - isAuthenticated:', isAuthenticated);
-				console.log('  - role:', role);
-				console.log('  - token:', token);
-			}
-		}
-	}, [isLoading, isAuthenticated, role, token]);
+		console.log('=== INDEX ROUTE MOUNTED ===');
+		console.log('Initial auth state:', { isLoading, isAuthenticated, role, token: token ? '***' : null });
+		console.log('===========================');
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []); // Only run once on mount
 
 	// Show loading spinner while checking authentication
 	if (isLoading) {

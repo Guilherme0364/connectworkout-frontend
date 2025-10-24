@@ -32,6 +32,11 @@ import ExerciseCard from '../../../components/ExerciseCard';
 import ConfirmDialog from '../../../components/ConfirmDialog';
 import { WorkoutService, ExerciseService } from '../../../services';
 import { handleApiError, showSuccess } from '../../../utils/errorHandler';
+import {
+	translateBodyPart,
+	translateEquipment,
+	capitalizeFirst,
+} from '../../../utils/exerciseTranslations';
 import type {
 	Workout,
 	WorkoutDay,
@@ -76,6 +81,7 @@ export default function EditWorkout() {
 	const [searchResults, setSearchResults] = useState<ExerciseDbModel[]>([]);
 	const [searching, setSearching] = useState(false);
 	const [selectedExerciseDb, setSelectedExerciseDb] = useState<ExerciseDbModel | null>(null);
+	const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
 
 	// Exercise Form
 	const [exerciseSets, setExerciseSets] = useState('3');
@@ -100,6 +106,15 @@ export default function EditWorkout() {
 		}
 	}, [workoutId]);
 
+	// Cleanup search timeout on unmount
+	useEffect(() => {
+		return () => {
+			if (searchTimeout) {
+				clearTimeout(searchTimeout);
+			}
+		};
+	}, [searchTimeout]);
+
 	const loadWorkout = async () => {
 		try {
 			setLoading(true);
@@ -108,7 +123,7 @@ export default function EditWorkout() {
 			setWorkoutName(data.name);
 			setIsActive(data.isActive);
 		} catch (error) {
-			handleApiError(error, 'N�o foi poss�vel carregar o treino');
+			handleApiError(error, 'Não foi possível carregar o treino');
 			handleBack();
 		} finally {
 			setLoading(false);
@@ -130,9 +145,9 @@ export default function EditWorkout() {
 	const handleSaveWorkoutInfo = async () => {
 		if (!workoutName.trim()) {
 			if (Platform.OS === 'web') {
-				window.alert('O nome do treino � obrigat�rio');
+				window.alert('O nome do treino é obrigatório');
 			} else {
-				Alert.alert('Erro', 'O nome do treino � obrigat�rio');
+				Alert.alert('Erro', 'O nome do treino é obrigatório');
 			}
 			return;
 		}
@@ -143,10 +158,17 @@ export default function EditWorkout() {
 				name: workoutName.trim(),
 				isActive,
 			});
-			showSuccess('Sucesso', 'Treino atualizado com sucesso');
-			loadWorkout(); // Reload to get updated data
+			showSuccess('Sucesso', 'Treino criado com sucesso!');
+
+			// Navigate back to student-workouts screen
+			if (workout?.studentId) {
+				router.replace(`/(private)/(coach)/(workout)/student-workouts?studentId=${workout.studentId}`);
+			} else {
+				// Fallback to students screen if studentId is not available
+				router.replace('/(private)/(coach)/(tabs)/students');
+			}
 		} catch (error) {
-			handleApiError(error, 'N�o foi poss�vel atualizar o treino');
+			handleApiError(error, 'Não foi possível atualizar o treino');
 		} finally {
 			setSaving(false);
 		}
@@ -180,7 +202,7 @@ export default function EditWorkout() {
 			showSuccess('Sucesso', 'Dia adicionado com sucesso');
 			loadWorkout();
 		} catch (error) {
-			handleApiError(error, 'N�o foi poss�vel adicionar o dia');
+			handleApiError(error, 'Não foi possível adicionar o dia');
 		} finally {
 			setAddingDay(false);
 		}
@@ -203,10 +225,10 @@ export default function EditWorkout() {
 			await WorkoutService.deleteWorkoutDay(Number(workoutId), dayToDelete.id);
 			setDeleteDayDialogVisible(false);
 			setDayToDelete(null);
-			showSuccess('Sucesso', 'Dia exclu�do com sucesso');
+			showSuccess('Sucesso', 'Dia excluído com sucesso');
 			loadWorkout();
 		} catch (error) {
-			handleApiError(error, 'N�o foi poss�vel excluir o dia');
+			handleApiError(error, 'Não foi possível excluir o dia');
 		} finally {
 			setDeletingDay(false);
 		}
@@ -230,24 +252,38 @@ export default function EditWorkout() {
 		setExerciseModalVisible(true);
 	};
 
-	const handleSearchExercises = async (query: string) => {
+	const handleSearchExercises = (query: string) => {
 		setExerciseSearchQuery(query);
 
+		// Clear previous timeout
+		if (searchTimeout) {
+			clearTimeout(searchTimeout);
+		}
+
+		// Clear results if query is too short
 		if (query.trim().length < 2) {
 			setSearchResults([]);
+			setSearching(false);
 			return;
 		}
 
-		try {
-			setSearching(true);
-			const results = await ExerciseService.searchExercises(query.trim());
-			setSearchResults(results);
-		} catch (error) {
-			console.error('Search exercises error:', error);
-			setSearchResults([]);
-		} finally {
-			setSearching(false);
-		}
+		// Show searching state immediately
+		setSearching(true);
+
+		// Debounce the API call
+		const timeout = setTimeout(async () => {
+			try {
+				const results = await ExerciseService.searchExercises(query.trim());
+				setSearchResults(results);
+			} catch (error) {
+				console.error('Search exercises error:', error);
+				setSearchResults([]);
+			} finally {
+				setSearching(false);
+			}
+		}, 500); // Wait 500ms after user stops typing
+
+		setSearchTimeout(timeout);
 	};
 
 	const handleSelectExerciseDb = (exercise: ExerciseDbModel) => {
@@ -259,18 +295,40 @@ export default function EditWorkout() {
 
 		if (exerciseModalMode === 'add' && !selectedExerciseDb) {
 			if (Platform.OS === 'web') {
-				window.alert('Selecione um exerc�cio');
+				window.alert('Selecione um exercício');
 			} else {
-				Alert.alert('Erro', 'Selecione um exerc�cio');
+				Alert.alert('Erro', 'Selecione um exercício');
 			}
 			return;
 		}
 
 		if (!exerciseSets.trim() || !exerciseReps.trim()) {
 			if (Platform.OS === 'web') {
-				window.alert('S�ries e repeti��es s�o obrigat�rias');
+				window.alert('Séries e repetições são obrigatórias');
 			} else {
-				Alert.alert('Erro', 'S�ries e repeti��es s�o obrigat�rias');
+				Alert.alert('Erro', 'Séries e repetições são obrigatórias');
+			}
+			return;
+		}
+
+		// Validate weight and rest are valid numbers
+		const parsedWeight = exerciseWeight.trim() ? parseFloat(exerciseWeight.trim()) : null;
+		const parsedRest = exerciseRest.trim() ? parseInt(exerciseRest.trim(), 10) : null;
+
+		if (exerciseWeight.trim() && (isNaN(parsedWeight!) || parsedWeight! < 0)) {
+			if (Platform.OS === 'web') {
+				window.alert('Peso deve ser um número válido');
+			} else {
+				Alert.alert('Erro', 'Peso deve ser um número válido');
+			}
+			return;
+		}
+
+		if (exerciseRest.trim() && (isNaN(parsedRest!) || parsedRest! < 0)) {
+			if (Platform.OS === 'web') {
+				window.alert('Descanso deve ser um número válido em segundos');
+			} else {
+				Alert.alert('Erro', 'Descanso deve ser um número válido em segundos');
 			}
 			return;
 		}
@@ -291,12 +349,12 @@ export default function EditWorkout() {
 						gifUrl: selectedExerciseDb.gifUrl,
 						sets: exerciseSets.trim(),
 						repetitions: exerciseReps.trim(),
-						weight: exerciseWeight.trim() ? Number(exerciseWeight) : undefined,
-						restSeconds: exerciseRest.trim() ? Number(exerciseRest) : undefined,
+						weight: parsedWeight ?? undefined,
+						restSeconds: parsedRest ?? undefined,
 						notes: exerciseNotes.trim() || undefined,
 					}
 				);
-				showSuccess('Sucesso', 'Exerc�cio adicionado com sucesso');
+				showSuccess('Sucesso', 'Exercício adicionado com sucesso');
 			} else if (exerciseModalMode === 'edit' && selectedExercise) {
 				// Update existing exercise
 				await WorkoutService.updateExercise(
@@ -306,18 +364,18 @@ export default function EditWorkout() {
 					{
 						sets: exerciseSets.trim(),
 						repetitions: exerciseReps.trim(),
-						weight: exerciseWeight.trim() ? Number(exerciseWeight) : undefined,
-						restSeconds: exerciseRest.trim() ? Number(exerciseRest) : undefined,
+						weight: parsedWeight ?? undefined,
+						restSeconds: parsedRest ?? undefined,
 						notes: exerciseNotes.trim() || undefined,
 					}
 				);
-				showSuccess('Sucesso', 'Exerc�cio atualizado com sucesso');
+				showSuccess('Sucesso', 'Exercício atualizado com sucesso');
 			}
 
 			setExerciseModalVisible(false);
 			loadWorkout();
 		} catch (error) {
-			handleApiError(error, 'N�o foi poss�vel salvar o exerc�cio');
+			handleApiError(error, 'Não foi possível salvar o exercício');
 		} finally {
 			setSavingExercise(false);
 		}
@@ -360,10 +418,10 @@ export default function EditWorkout() {
 			);
 			setDeleteExerciseDialogVisible(false);
 			setExerciseToDelete(null);
-			showSuccess('Sucesso', 'Exerc�cio exclu�do com sucesso');
+			showSuccess('Sucesso', 'Exercício excluído com sucesso');
 			loadWorkout();
 		} catch (error) {
-			handleApiError(error, 'N�o foi poss�vel excluir o exerc�cio');
+			handleApiError(error, 'Não foi possível excluir o exercício');
 		} finally {
 			setDeletingExercise(false);
 		}
@@ -377,7 +435,7 @@ export default function EditWorkout() {
 		return (
 			<SafeAreaView style={styles.container}>
 				<View style={styles.loadingContainer}>
-					<ActivityIndicator size="large" color="#3B82F6" />
+					<ActivityIndicator size="large" color="#BBF246" />
 					<Text style={styles.loadingText}>Carregando treino...</Text>
 				</View>
 			</SafeAreaView>
@@ -407,7 +465,7 @@ export default function EditWorkout() {
 
 				{/* Workout Info Card */}
 				<View style={styles.card}>
-					<Text style={styles.cardTitle}>Informa��es do Treino</Text>
+					<Text style={styles.cardTitle}>Informações do Treino</Text>
 
 					<View style={styles.inputContainer}>
 						<Text style={styles.label}>Nome do Treino</Text>
@@ -449,7 +507,7 @@ export default function EditWorkout() {
 						) : (
 							<>
 								<Ionicons name="checkmark-circle-outline" size={20} color="#FFFFFF" />
-								<Text style={styles.saveButtonText}>Salvar Altera��es</Text>
+								<Text style={styles.saveButtonText}>Salvar Alterações</Text>
 							</>
 						)}
 					</TouchableOpacity>
@@ -460,7 +518,7 @@ export default function EditWorkout() {
 					<Text style={styles.sectionTitle}>Dias da Semana</Text>
 					{availableDays.length > 0 && (
 						<TouchableOpacity style={styles.addButton} onPress={handleOpenAddDayModal}>
-							<Ionicons name="add-circle" size={20} color="#3B82F6" />
+							<Ionicons name="add-circle" size={20} color="#BBF246" />
 							<Text style={styles.addButtonText}>Adicionar Dia</Text>
 						</TouchableOpacity>
 					)}
@@ -471,7 +529,7 @@ export default function EditWorkout() {
 						<Ionicons name="calendar-outline" size={48} color="#9CA3AF" />
 						<Text style={styles.emptyStateTitle}>Nenhum dia adicionado</Text>
 						<Text style={styles.emptyStateText}>
-							Adicione dias da semana para come�ar a criar o treino
+							Adicione dias da semana para começar a criar o treino
 						</Text>
 					</View>
 				) : (
@@ -491,7 +549,7 @@ export default function EditWorkout() {
 											<View style={styles.noExercisesState}>
 												<Ionicons name="barbell-outline" size={32} color="#9CA3AF" />
 												<Text style={styles.noExercisesText}>
-													Nenhum exerc�cio adicionado
+													Nenhum exercício adicionado
 												</Text>
 											</View>
 										) : (
@@ -509,9 +567,9 @@ export default function EditWorkout() {
 											style={styles.addExerciseButton}
 											onPress={() => handleAddExercisePress(day)}
 										>
-											<Ionicons name="add-circle-outline" size={20} color="#3B82F6" />
+											<Ionicons name="add-circle-outline" size={20} color="#BBF246" />
 											<Text style={styles.addExerciseButtonText}>
-												Adicionar Exerc�cio
+												Adicionar Exercício
 											</Text>
 										</TouchableOpacity>
 									</View>
@@ -601,43 +659,59 @@ export default function EditWorkout() {
 					<View style={[styles.modalContent, styles.exerciseModalContent]}>
 						<View style={styles.modalHeader}>
 							<Text style={styles.modalTitle}>
-								{exerciseModalMode === 'add' ? 'Adicionar Exerc�cio' : 'Editar Exerc�cio'}
+								{exerciseModalMode === 'add' ? 'Adicionar Exercício' : 'Editar Exercício'}
 							</Text>
 							<TouchableOpacity onPress={() => setExerciseModalVisible(false)}>
 								<Ionicons name="close" size={24} color="#6B7280" />
 							</TouchableOpacity>
 						</View>
-
-						<ScrollView style={styles.exerciseModalScroll} showsVerticalScrollIndicator={false}>
-							{/* Exercise Search (only for add mode) */}
-							{exerciseModalMode === 'add' && (
-								<View style={styles.searchSection}>
-									<Text style={styles.modalSubtitle}>Buscar Exerc�cio</Text>
-									<View style={styles.searchContainer}>
-										<Ionicons name="search" size={20} color="#9CA3AF" />
-										<TextInput
-											style={styles.searchInput}
-											value={exerciseSearchQuery}
-											onChangeText={handleSearchExercises}
-											placeholder="Digite o nome do exerc�cio"
-											placeholderTextColor="#9CA3AF"
-										/>
-									</View>
-
-									{searching && (
-										<View style={styles.searchingContainer}>
-											<ActivityIndicator size="small" color="#3B82F6" />
-											<Text style={styles.searchingText}>Buscando...</Text>
-										</View>
+						{/* Exercise Search (only for add mode) */}
+						{exerciseModalMode === 'add' && (
+							<>
+								<View style={styles.searchContainer}>
+									<Ionicons name="search" size={20} color="#9CA3AF" />
+									<TextInput
+										style={styles.searchInput}
+										value={exerciseSearchQuery}
+										onChangeText={handleSearchExercises}
+										placeholder="Digite o nome do exercício (em inglês)"
+										placeholderTextColor="#9CA3AF"
+										autoFocus
+									/>
+									{exerciseSearchQuery.length > 0 && (
+										<TouchableOpacity onPress={() => {
+											setExerciseSearchQuery('');
+											setSearchResults([]);
+										}}>
+											<Ionicons name="close-circle" size={20} color="#9CA3AF" />
+										</TouchableOpacity>
 									)}
+								</View>
 
-									{!searching && searchResults.length > 0 && (
-										<FlatList
-											data={searchResults}
-											keyExtractor={(item) => item.id}
-											style={styles.searchResults}
-											renderItem={({ item }) => (
+								{searching && (
+									<View style={styles.searchingContainer}>
+										<ActivityIndicator size="small" color="#BBF246" />
+										<Text style={styles.searchingText}>Buscando exercícios...</Text>
+									</View>
+								)}
+
+								{!searching && exerciseSearchQuery.length >= 2 && searchResults.length === 0 && (
+									<View style={styles.emptySearchState}>
+										<Ionicons name="search-outline" size={48} color="#9CA3AF" />
+										<Text style={styles.emptySearchText}>Nenhum exercício encontrado</Text>
+										<Text style={styles.emptySearchHint}>Tente buscar em inglês (ex: "push", "squat", "curl")</Text>
+									</View>
+								)}
+
+								{!searching && searchResults.length > 0 && (
+									<View style={styles.searchResultsContainer}>
+										<Text style={styles.resultsCount}>
+											{searchResults.length} exercício{searchResults.length > 1 ? 's' : ''} encontrado{searchResults.length > 1 ? 's' : ''}
+										</Text>
+										<ScrollView style={styles.searchResultsScroll} nestedScrollEnabled>
+											{searchResults.map((item) => (
 												<TouchableOpacity
+													key={item.id}
 													style={[
 														styles.searchResultItem,
 														selectedExerciseDb?.id === item.id &&
@@ -652,52 +726,57 @@ export default function EditWorkout() {
 													<View style={styles.searchResultInfo}>
 														<Text style={styles.searchResultName}>{item.name}</Text>
 														<Text style={styles.searchResultMeta}>
-															{item.bodyPart} " {item.equipment}
+															{capitalizeFirst(translateBodyPart(item.bodyPart))} • {capitalizeFirst(translateEquipment(item.equipment))}
 														</Text>
 													</View>
 													{selectedExerciseDb?.id === item.id && (
 														<Ionicons
 															name="checkmark-circle"
 															size={24}
-															color="#3B82F6"
+															color="#BBF246"
 														/>
 													)}
 												</TouchableOpacity>
-											)}
-										/>
-									)}
+											))}
+										</ScrollView>
+									</View>
+								)}
 
-									{selectedExerciseDb && (
-										<View style={styles.selectedExercisePreview}>
-											<Text style={styles.previewLabel}>Exerc�cio Selecionado:</Text>
-											<View style={styles.previewCard}>
-												<Image
-													source={{ uri: selectedExerciseDb.gifUrl }}
-													style={styles.previewImage}
-												/>
-												<View style={styles.previewInfo}>
-													<Text style={styles.previewName}>
-														{selectedExerciseDb.name}
-													</Text>
-													<Text style={styles.previewMeta}>
-														{selectedExerciseDb.bodyPart} "{' '}
-														{selectedExerciseDb.equipment}
-													</Text>
-												</View>
+								{selectedExerciseDb && (
+									<View style={styles.selectedExercisePreview}>
+										<Text style={styles.previewLabel}>Exercício Selecionado:</Text>
+										<View style={styles.previewCard}>
+											<Image
+												source={{ uri: selectedExerciseDb.gifUrl }}
+												style={styles.previewImage}
+											/>
+											<View style={styles.previewInfo}>
+												<Text style={styles.previewName}>
+													{selectedExerciseDb.name}
+												</Text>
+												<Text style={styles.previewMeta}>
+													{capitalizeFirst(translateBodyPart(selectedExerciseDb.bodyPart))} • {capitalizeFirst(translateEquipment(selectedExerciseDb.equipment))}
+												</Text>
 											</View>
 										</View>
-									)}
-								</View>
-							)}
+									</View>
+								)}
+							</>
+						)}
 
-							{/* Exercise Configuration */}
+						{/* Exercise Configuration */}
+						<ScrollView
+							style={styles.exerciseConfigScroll}
+							showsVerticalScrollIndicator={false}
+							nestedScrollEnabled
+						>
 							{(exerciseModalMode === 'edit' || selectedExerciseDb) && (
 								<View style={styles.configSection}>
-									<Text style={styles.modalSubtitle}>Configura��o</Text>
+									<Text style={styles.modalSubtitle}>Configuração</Text>
 
 									<View style={styles.formRow}>
 										<View style={styles.formField}>
-											<Text style={styles.formLabel}>S�ries *</Text>
+											<Text style={styles.formLabel}>Séries *</Text>
 											<TextInput
 												style={styles.formInput}
 												value={exerciseSets}
@@ -709,7 +788,7 @@ export default function EditWorkout() {
 										</View>
 
 										<View style={styles.formField}>
-											<Text style={styles.formLabel}>Repeti��es *</Text>
+											<Text style={styles.formLabel}>Repetições *</Text>
 											<TextInput
 												style={styles.formInput}
 												value={exerciseReps}
@@ -748,12 +827,12 @@ export default function EditWorkout() {
 									</View>
 
 									<View style={styles.formFieldFull}>
-										<Text style={styles.formLabel}>Observa��es</Text>
+										<Text style={styles.formLabel}>Observações</Text>
 										<TextInput
 											style={[styles.formInput, styles.formTextArea]}
 											value={exerciseNotes}
 											onChangeText={setExerciseNotes}
-											placeholder="Adicione observa��es sobre o exerc�cio"
+											placeholder="Adicione observações sobre o exercício"
 											placeholderTextColor="#9CA3AF"
 											multiline
 											numberOfLines={3}
@@ -794,7 +873,7 @@ export default function EditWorkout() {
 			<ConfirmDialog
 				visible={deleteDayDialogVisible}
 				title="Excluir Dia"
-				message={`Tem certeza que deseja excluir ${dayToDelete ? DayOfWeekLabels[dayToDelete.dayOfWeek] : 'este dia'}? Todos os exerc�cios deste dia tamb�m ser�o exclu�dos.`}
+				message={`Tem certeza que deseja excluir ${dayToDelete ? DayOfWeekLabels[dayToDelete.dayOfWeek] : 'este dia'}? Todos os exercícios deste dia também serão excluídos.`}
 				confirmText={deletingDay ? 'Excluindo...' : 'Excluir'}
 				cancelText="Cancelar"
 				confirmColor="#EF4444"
@@ -810,7 +889,7 @@ export default function EditWorkout() {
 			{/* Delete Exercise Dialog */}
 			<ConfirmDialog
 				visible={deleteExerciseDialogVisible}
-				title="Excluir Exerc�cio"
+				title="Excluir Exercício"
 				message={`Tem certeza que deseja excluir ${exerciseToDelete?.exercise.name}?`}
 				confirmText={deletingExercise ? 'Excluindo...' : 'Excluir'}
 				cancelText="Cancelar"
@@ -917,7 +996,7 @@ const styles = StyleSheet.create({
 		color: '#374151',
 	},
 	saveButton: {
-		backgroundColor: '#3B82F6',
+		backgroundColor: '#BBF246',
 		flexDirection: 'row',
 		alignItems: 'center',
 		justifyContent: 'center',
@@ -1008,7 +1087,7 @@ const styles = StyleSheet.create({
 		paddingVertical: 12,
 		borderRadius: 8,
 		borderWidth: 1,
-		borderColor: '#3B82F6',
+		borderColor: '#BBF246',
 		borderStyle: 'dashed',
 		backgroundColor: '#EFF6FF',
 	},
@@ -1034,13 +1113,17 @@ const styles = StyleSheet.create({
 		maxHeight: '80%',
 	},
 	exerciseModalContent: {
-		maxHeight: '90%',
+		maxHeight: '95%',
+		height: '95%',
 	},
 	modalHeader: {
 		flexDirection: 'row',
 		justifyContent: 'space-between',
 		alignItems: 'center',
 		marginBottom: 16,
+		paddingBottom: 12,
+		borderBottomWidth: 1,
+		borderBottomColor: '#E5E7EB',
 	},
 	modalTitle: {
 		fontSize: 20,
@@ -1072,7 +1155,7 @@ const styles = StyleSheet.create({
 	},
 	dayOptionSelected: {
 		backgroundColor: '#EFF6FF',
-		borderColor: '#3B82F6',
+		borderColor: '#BBF246',
 	},
 	dayOptionText: {
 		fontSize: 14,
@@ -1104,7 +1187,7 @@ const styles = StyleSheet.create({
 		flex: 1,
 		paddingVertical: 14,
 		borderRadius: 8,
-		backgroundColor: '#3B82F6',
+		backgroundColor: '#BBF246',
 		alignItems: 'center',
 	},
 	modalConfirmButtonText: {
@@ -1113,25 +1196,28 @@ const styles = StyleSheet.create({
 		color: '#FFFFFF',
 	},
 	// Exercise modal styles
-	exerciseModalScroll: {
-		maxHeight: '70%',
-	},
-	searchSection: {
-		marginBottom: 24,
+	exerciseConfigScroll: {
+		flex: 1,
+		marginTop: 12,
 	},
 	searchContainer: {
 		flexDirection: 'row',
 		alignItems: 'center',
-		backgroundColor: '#F9FAFB',
-		borderWidth: 1,
-		borderColor: '#E5E7EB',
-		borderRadius: 8,
+		backgroundColor: '#FFFFFF',
+		borderWidth: 2,
+		borderColor: '#BBF246',
+		borderRadius: 12,
 		paddingHorizontal: 12,
-		marginBottom: 12,
+		marginBottom: 16,
+		shadowColor: '#BBF246',
+		shadowOffset: { width: 0, height: 2 },
+		shadowOpacity: 0.1,
+		shadowRadius: 4,
+		elevation: 3,
 	},
 	searchInput: {
 		flex: 1,
-		paddingVertical: 12,
+		paddingVertical: 14,
 		paddingHorizontal: 8,
 		fontSize: 16,
 		color: '#111827',
@@ -1140,90 +1226,133 @@ const styles = StyleSheet.create({
 		flexDirection: 'row',
 		alignItems: 'center',
 		justifyContent: 'center',
-		paddingVertical: 16,
+		paddingVertical: 32,
 	},
 	searchingText: {
 		marginLeft: 8,
-		fontSize: 14,
+		fontSize: 16,
 		color: '#6B7280',
 	},
-	searchResults: {
-		maxHeight: 200,
+	emptySearchState: {
+		alignItems: 'center',
+		paddingVertical: 40,
+		paddingHorizontal: 20,
+	},
+	emptySearchText: {
+		fontSize: 16,
+		fontWeight: '600',
+		color: '#374151',
+		marginTop: 12,
+		marginBottom: 4,
+	},
+	emptySearchHint: {
+		fontSize: 14,
+		color: '#6B7280',
+		textAlign: 'center',
+	},
+	searchResultsContainer: {
+		flex: 1,
+		marginBottom: 16,
+	},
+	resultsCount: {
+		fontSize: 14,
+		fontWeight: '600',
+		color: '#6B7280',
 		marginBottom: 12,
+	},
+	searchResultsScroll: {
+		maxHeight: 300,
 	},
 	searchResultItem: {
 		flexDirection: 'row',
 		alignItems: 'center',
-		padding: 12,
+		padding: 14,
 		backgroundColor: '#F9FAFB',
-		borderRadius: 8,
-		marginBottom: 8,
+		borderRadius: 12,
+		marginBottom: 10,
 		borderWidth: 2,
 		borderColor: 'transparent',
+		shadowColor: '#000',
+		shadowOffset: { width: 0, height: 1 },
+		shadowOpacity: 0.05,
+		shadowRadius: 2,
+		elevation: 2,
 	},
 	searchResultItemSelected: {
 		backgroundColor: '#EFF6FF',
-		borderColor: '#3B82F6',
+		borderColor: '#BBF246',
+		shadowColor: '#BBF246',
+		shadowOpacity: 0.2,
 	},
 	searchResultImage: {
-		width: 50,
-		height: 50,
-		borderRadius: 8,
+		width: 70,
+		height: 70,
+		borderRadius: 10,
 		backgroundColor: '#E5E7EB',
-		marginRight: 12,
+		marginRight: 14,
 	},
 	searchResultInfo: {
 		flex: 1,
 	},
 	searchResultName: {
-		fontSize: 14,
+		fontSize: 15,
 		fontWeight: '600',
 		color: '#111827',
-		marginBottom: 4,
+		marginBottom: 6,
 	},
 	searchResultMeta: {
-		fontSize: 12,
+		fontSize: 13,
 		color: '#6B7280',
 		textTransform: 'capitalize',
 	},
 	selectedExercisePreview: {
 		marginTop: 16,
+		marginBottom: 16,
+		paddingTop: 16,
+		borderTopWidth: 2,
+		borderTopColor: '#E5E7EB',
 	},
 	previewLabel: {
-		fontSize: 14,
-		fontWeight: '600',
-		color: '#374151',
-		marginBottom: 8,
+		fontSize: 15,
+		fontWeight: '700',
+		color: '#111827',
+		marginBottom: 12,
 	},
 	previewCard: {
 		flexDirection: 'row',
 		alignItems: 'center',
-		padding: 12,
+		padding: 16,
 		backgroundColor: '#EFF6FF',
-		borderRadius: 8,
-		borderWidth: 1,
-		borderColor: '#3B82F6',
+		borderRadius: 12,
+		borderWidth: 2,
+		borderColor: '#BBF246',
+		shadowColor: '#BBF246',
+		shadowOffset: { width: 0, height: 2 },
+		shadowOpacity: 0.15,
+		shadowRadius: 4,
+		elevation: 3,
 	},
 	previewImage: {
-		width: 60,
-		height: 60,
-		borderRadius: 8,
-		backgroundColor: '#E5E7EB',
-		marginRight: 12,
+		width: 80,
+		height: 80,
+		borderRadius: 10,
+		backgroundColor: '#FFFFFF',
+		marginRight: 14,
 	},
 	previewInfo: {
 		flex: 1,
 	},
 	previewName: {
-		fontSize: 16,
-		fontWeight: '600',
+		fontSize: 17,
+		fontWeight: '700',
 		color: '#111827',
-		marginBottom: 4,
+		marginBottom: 6,
 	},
 	previewMeta: {
 		fontSize: 14,
 		color: '#6B7280',
 		textTransform: 'capitalize',
+		fontWeight: '500',
 	},
 	configSection: {},
 	formRow: {

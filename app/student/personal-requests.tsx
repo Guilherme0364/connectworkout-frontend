@@ -74,7 +74,7 @@ export default function PersonalRequestsScreen() {
       >
         {isLoading && !refreshing ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#C4FF0D" />
+            <ActivityIndicator size="large" color="#BBF246" />
             <Text style={styles.loadingText}>Carregando solicitações...</Text>
           </View>
         ) : pendingRequests.length === 0 ? (

@@ -85,20 +85,10 @@ async function request<T = any>(
         console.warn('🚫 401 Unauthorized - Session expired');
 
         // Clear tokens from storage
+        // The AuthContext will detect this change and redirect to login
         await clearTokens();
 
-        // Show platform-specific alert
-        if (Platform.OS === 'web') {
-          window.alert('Your session expired, please login again');
-        } else {
-          Alert.alert(
-            'Session Expired',
-            'Your session has expired. Please login again.',
-            [{ text: 'OK' }]
-          );
-        }
-
-        // Throw error (AuthContext will handle redirect since tokens are cleared)
+        // Throw error to stop execution of the current request
         const error: ApiError = {
           message: 'Session expired',
           status: 401,

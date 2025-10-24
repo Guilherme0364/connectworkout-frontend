@@ -19,7 +19,7 @@ export default function Index() {
 		console.log('⏳ Showing loading screen...');
 		return (
 			<View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F9FAFB' }}>
-				<ActivityIndicator size="large" color="#3B82F6" />
+				<ActivityIndicator size="large" color="#BBF246" />
 			</View>
 		);
 	}

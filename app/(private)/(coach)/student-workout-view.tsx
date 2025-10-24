@@ -103,7 +103,7 @@ export default function StudentWorkoutView() {
 		return (
 			<SafeAreaView style={styles.container}>
 				<View style={styles.loadingContainer}>
-					<ActivityIndicator size="large" color="#3B82F6" />
+					<ActivityIndicator size="large" color="#BBF246" />
 					<Text style={styles.loadingText}>Carregando treino...</Text>
 				</View>
 			</SafeAreaView>
@@ -123,7 +123,7 @@ export default function StudentWorkoutView() {
 						<Text style={styles.subtitle}>Ficha de Treino</Text>
 					</View>
 					<TouchableOpacity style={styles.manageButton} onPress={handleManageWorkouts}>
-						<Ionicons name="settings-outline" size={22} color="#3B82F6" />
+						<Ionicons name="settings-outline" size={22} color="#BBF246" />
 					</TouchableOpacity>
 				</View>
 
@@ -133,7 +133,7 @@ export default function StudentWorkoutView() {
 						<View style={styles.workoutInfoCard}>
 							<View style={styles.workoutHeader}>
 								<View style={styles.workoutIconContainer}>
-									<Ionicons name="barbell" size={28} color="#3B82F6" />
+									<Ionicons name="barbell" size={28} color="#BBF246" />
 								</View>
 								<View style={styles.workoutInfo}>
 									<Text style={styles.workoutName}>{activeWorkout.name}</Text>
@@ -185,7 +185,7 @@ export default function StudentWorkoutView() {
 											>
 												<View style={styles.dayHeaderLeft}>
 													<View style={styles.dayIconContainer}>
-														<Ionicons name="calendar" size={20} color="#3B82F6" />
+														<Ionicons name="calendar" size={20} color="#BBF246" />
 													</View>
 													<View>
 														<Text style={styles.dayName}>
@@ -476,13 +476,13 @@ const styles = StyleSheet.create({
 		alignItems: 'center',
 		justifyContent: 'center',
 		gap: 8,
-		backgroundColor: '#3B82F6',
+		backgroundColor: '#BBF246',
 		paddingVertical: 16,
 		paddingHorizontal: 24,
 		borderRadius: 12,
 		marginTop: 24,
 		marginHorizontal: 20,
-		shadowColor: '#3B82F6',
+		shadowColor: '#BBF246',
 		shadowOffset: { width: 0, height: 4 },
 		shadowOpacity: 0.3,
 		shadowRadius: 8,
@@ -503,7 +503,7 @@ const styles = StyleSheet.create({
 		width: 56,
 		height: 56,
 		borderRadius: 28,
-		backgroundColor: '#3B82F6',
+		backgroundColor: '#BBF246',
 		justifyContent: 'center',
 		alignItems: 'center',
 		shadowColor: '#000',

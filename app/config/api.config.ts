@@ -103,6 +103,7 @@ export const API_ENDPOINTS = {
   // Exercise endpoints
   EXERCISES: {
     SEARCH: '/api/exercises/search',
+    FILTER: '/api/exercises/filter',
     GET_BY_ID: (id: string) => `/api/exercises/${id}`,
     GET_BODY_PARTS: '/api/exercises/bodyparts',
     GET_BY_BODY_PART: (bodyPart: string) => `/api/exercises/bodypart/${bodyPart}`,
@@ -118,6 +119,7 @@ export const API_ENDPOINTS = {
     GET_STUDENT_WORKOUTS: (studentId: number) => `/api/workouts/student/${studentId}`,
     GET_WORKOUT_DETAILS: (workoutId: number) => `/api/workouts/${workoutId}`,
     CREATE_WORKOUT: '/api/workouts',
+    CREATE_WORKOUT_BULK: '/api/workouts/bulk',
     UPDATE_WORKOUT: (workoutId: number) => `/api/workouts/${workoutId}`,
     DELETE_WORKOUT: (workoutId: number) => `/api/workouts/${workoutId}`,
 

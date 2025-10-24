@@ -10,14 +10,16 @@ import {
 	ActivityIndicator,
 	SafeAreaView,
 	ScrollView,
-	Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { InstructorService } from '../../services';
+import { useAlert } from '../../contexts/AlertContext';
+import { Theme } from '../../styles/theme';
 
 export default function AddStudent() {
 	const router = useRouter();
+	const { showAlert } = useAlert();
 	const [email, setEmail] = useState('');
 	const [loading, setLoading] = useState(false);
 
@@ -34,30 +36,15 @@ export default function AddStudent() {
 		return emailRegex.test(email);
 	};
 
-	// Cross-platform alert helper
-	const showAlert = (title: string, message: string, onOk?: () => void) => {
-		if (Platform.OS === 'web') {
-			window.alert(`${title}\n\n${message}`);
-			onOk?.();
-		} else {
-			Alert.alert(title, message, [
-				{
-					text: 'OK',
-					onPress: onOk,
-				},
-			]);
-		}
-	};
-
 	const handleConnect = async () => {
 		// Validation
 		if (!email.trim()) {
-			showAlert('Campo obrigatório', 'Por favor, digite o email do aluno.');
+			showAlert('error', 'Campo obrigatório', 'Por favor, digite o email do aluno.');
 			return;
 		}
 
 		if (!validateEmail(email.trim())) {
-			showAlert('Email inválido', 'Por favor, digite um email válido.');
+			showAlert('error', 'Email inválido', 'Por favor, digite um email válido.');
 			return;
 		}
 
@@ -71,8 +58,10 @@ export default function AddStudent() {
 
 			// Success
 			showAlert(
+				'success',
 				'Aluno conectado!',
 				'Agora você pode criar treinos para este aluno.',
+				'OK',
 				() => {
 					router.back(); // Go back to students list
 				}
@@ -87,25 +76,28 @@ export default function AddStudent() {
 				switch (status) {
 					case 400:
 						showAlert(
+							'error',
 							'Erro',
 							'O usuário não é um aluno ou já está conectado com você.'
 						);
 						break;
 					case 404:
 						showAlert(
+							'info',
 							'Aluno não encontrado',
 							'Nenhum aluno encontrado com este email.\n\nVerifique se:\n• O email está correto\n• O aluno já criou uma conta no app'
 						);
 						break;
 					case 401:
-						showAlert('Sessão expirada', 'Faça login novamente.');
+						showAlert('warning', 'Sessão expirada', 'Faça login novamente.');
 						// Could navigate to login here
 						break;
 					default:
-						showAlert('Erro', 'Não foi possível conectar com o aluno.');
+						showAlert('error', 'Erro', 'Não foi possível conectar com o aluno.');
 				}
 			} else {
 				showAlert(
+					'error',
 					'Erro de conexão',
 					'Verifique sua internet e tente novamente.'
 				);
@@ -133,7 +125,7 @@ export default function AddStudent() {
 							onPress={handleBack}
 							disabled={loading}
 						>
-							<Ionicons name="arrow-back" size={24} color="#111827" />
+							<Ionicons name="arrow-back" size={24} color={Theme.colors.textPrimary} />
 						</TouchableOpacity>
 						<Text style={styles.title}>Adicionar Aluno</Text>
 					</View>
@@ -151,13 +143,13 @@ export default function AddStudent() {
 								<Ionicons
 									name="mail-outline"
 									size={20}
-									color="#9CA3AF"
+									color={Theme.colors.textTertiary}
 									style={styles.inputIcon}
 								/>
 								<TextInput
 									style={styles.input}
 									placeholder="exemplo@email.com"
-									placeholderTextColor="#9CA3AF"
+									placeholderTextColor={Theme.colors.textTertiary}
 									value={email}
 									onChangeText={setEmail}
 									keyboardType="email-address"
@@ -190,7 +182,7 @@ export default function AddStudent() {
 
 						{/* Info Box */}
 						<View style={styles.infoBox}>
-							<Ionicons name="information-circle" size={24} color="#3B82F6" />
+							<Ionicons name="information-circle" size={24} color={Theme.colors.primary} />
 							<View style={styles.infoTextContainer}>
 								<Text style={styles.infoTitle}>Dica</Text>
 								<Text style={styles.infoText}>
@@ -209,7 +201,7 @@ export default function AddStudent() {
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
-		backgroundColor: '#F9FAFB',
+		backgroundColor: Theme.colors.surfaceDark,
 	},
 	keyboardAvoid: {
 		flex: 1,
@@ -223,7 +215,7 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 16,
 		paddingTop: 16,
 		paddingBottom: 24,
-		backgroundColor: '#F9FAFB',
+		backgroundColor: Theme.colors.surfaceDark,
 	},
 	backButton: {
 		marginRight: 12,
@@ -232,14 +224,14 @@ const styles = StyleSheet.create({
 	title: {
 		fontSize: 28,
 		fontWeight: '700',
-		color: '#111827',
+		color: Theme.colors.textPrimary,
 	},
 	content: {
 		paddingHorizontal: 16,
 	},
 	subtitle: {
 		fontSize: 15,
-		color: '#6B7280',
+		color: Theme.colors.textSecondary,
 		marginBottom: 32,
 		lineHeight: 22,
 	},
@@ -249,15 +241,15 @@ const styles = StyleSheet.create({
 	label: {
 		fontSize: 16,
 		fontWeight: '600',
-		color: '#111827',
+		color: Theme.colors.textPrimary,
 		marginBottom: 8,
 	},
 	inputWrapper: {
 		flexDirection: 'row',
 		alignItems: 'center',
-		backgroundColor: '#FFFFFF',
+		backgroundColor: Theme.colors.surface,
 		borderWidth: 1,
-		borderColor: '#E5E7EB',
+		borderColor: Theme.colors.border,
 		borderRadius: 12,
 		paddingHorizontal: 16,
 		shadowColor: '#000',
@@ -273,17 +265,17 @@ const styles = StyleSheet.create({
 		flex: 1,
 		paddingVertical: 16,
 		fontSize: 16,
-		color: '#111827',
+		color: Theme.colors.textPrimary,
 	},
 	button: {
-		backgroundColor: '#3B82F6',
+		backgroundColor: Theme.colors.primary,
 		padding: 18,
 		borderRadius: 12,
 		alignItems: 'center',
 		justifyContent: 'center',
 		minHeight: 56,
 		flexDirection: 'row',
-		shadowColor: '#3B82F6',
+		shadowColor: Theme.colors.primary,
 		shadowOffset: { width: 0, height: 4 },
 		shadowOpacity: 0.3,
 		shadowRadius: 8,
@@ -303,10 +295,10 @@ const styles = StyleSheet.create({
 	infoBox: {
 		marginTop: 32,
 		padding: 16,
-		backgroundColor: '#EFF6FF',
+		backgroundColor: `${Theme.colors.primary}10`,
 		borderRadius: 12,
 		borderLeftWidth: 4,
-		borderLeftColor: '#3B82F6',
+		borderLeftColor: Theme.colors.primary,
 		flexDirection: 'row',
 	},
 	infoTextContainer: {
@@ -316,12 +308,12 @@ const styles = StyleSheet.create({
 	infoTitle: {
 		fontSize: 16,
 		fontWeight: '600',
-		color: '#111827',
+		color: Theme.colors.textPrimary,
 		marginBottom: 6,
 	},
 	infoText: {
 		fontSize: 14,
-		color: '#6B7280',
+		color: Theme.colors.textSecondary,
 		lineHeight: 20,
 	},
 });

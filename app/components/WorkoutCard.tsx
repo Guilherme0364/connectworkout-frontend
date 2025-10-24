@@ -8,6 +8,7 @@ import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { WorkoutSummary } from '../types/api.types';
+import { Theme } from '../styles/theme';
 
 interface WorkoutCardProps {
   workout: WorkoutSummary;
@@ -41,12 +42,12 @@ const WorkoutCard: React.FC<WorkoutCardProps> = ({
           <View style={styles.actions}>
             {onEdit && (
               <Pressable style={styles.actionButton} onPress={onEdit}>
-                <Ionicons name="create-outline" size={20} color="#3B82F6" />
+                <Ionicons name="create-outline" size={20} color={Theme.colors.primary} />
               </Pressable>
             )}
             {onDelete && (
               <Pressable style={styles.actionButton} onPress={onDelete}>
-                <Ionicons name="trash-outline" size={20} color="#EF4444" />
+                <Ionicons name="trash-outline" size={20} color={Theme.colors.error} />
               </Pressable>
             )}
           </View>
@@ -55,14 +56,14 @@ const WorkoutCard: React.FC<WorkoutCardProps> = ({
 
       <View style={styles.stats}>
         <View style={styles.stat}>
-          <Ionicons name="calendar-outline" size={16} color="#6B7280" />
+          <Ionicons name="calendar-outline" size={16} color={Theme.colors.textSecondary} />
           <Text style={styles.statText}>
             {workout.daysCount} {workout.daysCount === 1 ? 'dia' : 'dias'}
           </Text>
         </View>
 
         <View style={styles.stat}>
-          <Ionicons name="barbell-outline" size={16} color="#6B7280" />
+          <Ionicons name="barbell-outline" size={16} color={Theme.colors.textSecondary} />
           <Text style={styles.statText}>
             {workout.exercisesCount} {workout.exercisesCount === 1 ? 'exercício' : 'exercícios'}
           </Text>
@@ -74,7 +75,7 @@ const WorkoutCard: React.FC<WorkoutCardProps> = ({
           Criado em {new Date(workout.createdAt).toLocaleDateString('pt-BR')}
         </Text>
         {onPress && (
-          <Ionicons name="chevron-forward-outline" size={20} color="#9CA3AF" />
+          <Ionicons name="chevron-forward-outline" size={20} color={Theme.colors.textTertiary} />
         )}
       </View>
     </Pressable>
@@ -83,7 +84,7 @@ const WorkoutCard: React.FC<WorkoutCardProps> = ({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Theme.colors.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -111,11 +112,11 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#111827',
+    color: Theme.colors.textPrimary,
     flex: 1,
   },
   activeBadge: {
-    backgroundColor: '#10B98115',
+    backgroundColor: `${Theme.colors.success}15`,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
@@ -123,7 +124,7 @@ const styles = StyleSheet.create({
   activeBadgeText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#10B981',
+    color: Theme.components.badgeSuccessText,
   },
   actions: {
     flexDirection: 'row',
@@ -144,7 +145,7 @@ const styles = StyleSheet.create({
   },
   statText: {
     fontSize: 14,
-    color: '#6B7280',
+    color: Theme.colors.textSecondary,
   },
   footer: {
     flexDirection: 'row',
@@ -152,11 +153,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
+    borderTopColor: Theme.colors.border,
   },
   date: {
     fontSize: 12,
-    color: '#9CA3AF',
+    color: Theme.colors.textTertiary,
   },
 });
 

@@ -56,7 +56,7 @@ export default function CoachDashboard() {
 						value={mockData.todaySessions}
 						subtitle="scheduled"
 						icon="calendar"
-						color="#3B82F6"
+						color="#BBF246"
 					/>
 					<StatCard
 						title="Active Students"
@@ -95,7 +95,7 @@ export default function CoachDashboard() {
 				>
 					<View style={styles.quickActions}>
 						<View style={styles.actionButton}>
-							<View style={[styles.actionIcon, { backgroundColor: '#3B82F615' }]}>
+							<View style={[styles.actionIcon, { backgroundColor: '#BBF24615' }]}>
 								<Text style={[styles.actionIconText, { color: '#3B82F6' }]}>👤</Text>
 							</View>
 							<Text style={styles.actionText}>Add Student</Text>

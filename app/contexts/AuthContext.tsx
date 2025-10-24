@@ -19,7 +19,6 @@ export interface AuthContextType extends AuthState {
   logout: () => Promise<void>;
   setCredentials: (token: string, role: UserRole, user: UserDto) => Promise<void>;
   checkAuthState: () => Promise<void>;
-  clearDevStorage: () => Promise<void>;
 }
 
 type AuthAction =
@@ -224,16 +223,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
-  const clearDevStorage = async () => {
-    try {
-      await AsyncStorage.multiRemove([STORAGE_KEYS.TOKEN, STORAGE_KEYS.ROLE, STORAGE_KEYS.USER]);
-      await clearTokens();
-      dispatch({ type: 'CLEAR_CREDENTIALS' });
-      console.log('Development storage cleared successfully');
-    } catch (error) {
-      console.error('Failed to clear development storage:', error);
-    }
-  };
 
   const checkAuthState = useCallback(async () => {
     dispatch({ type: 'SET_LOADING', payload: true });
@@ -278,6 +267,25 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only run once on mount
 
+  // Monitor token changes to handle 401 logout
+  useEffect(() => {
+    // Poll storage to detect when tokens are cleared by API client
+    const checkTokenInterval = setInterval(async () => {
+      // Only check if currently authenticated
+      if (state.isAuthenticated && !state.isLoading) {
+        const credentials = await getStoredCredentials(); 
+
+        // If we're authenticated but tokens are gone, clear auth state
+        if (!credentials) {
+          console.log('🔒 Tokens cleared - logging out');
+          dispatch({ type: 'CLEAR_CREDENTIALS' });
+        }
+      }
+    }, 1000); // Check every second
+
+    return () => clearInterval(checkTokenInterval);
+  }, [state.isAuthenticated, state.isLoading]);
+
   const contextValue: AuthContextType = useMemo(
     () => ({
       ...state,
@@ -286,9 +294,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       logout,
       setCredentials,
       checkAuthState,
-      clearDevStorage,
     }),
-    [state, login, register, logout, setCredentials, checkAuthState, clearDevStorage]
+    [state, checkAuthState]
   );
 
   return (

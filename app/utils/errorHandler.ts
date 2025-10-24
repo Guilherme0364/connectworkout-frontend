@@ -2,17 +2,25 @@
  * Error Handler Utility
  *
  * Centralized error handling for API calls
+ * NOTE: These functions return error details that should be used with AlertDialog component
  */
 
-import { Alert } from 'react-native';
 import type { ApiError } from '../types/api.types';
+import type { AlertType } from '../components/AlertDialog';
+
+export interface ErrorAlertData {
+  type: AlertType;
+  title: string;
+  message: string;
+}
 
 /**
- * Handle API errors with user-friendly messages
+ * Get alert data for API errors
  * @param error - The error object from the API call
  * @param fallbackMessage - Optional custom message to show
+ * @returns Alert data to be used with AlertDialog
  */
-export const handleApiError = (error: any, fallbackMessage?: string): void => {
+export const getApiErrorAlert = (error: any, fallbackMessage?: string): ErrorAlertData => {
   console.error('API Error:', error);
 
   // If it's an ApiError from our client
@@ -21,61 +29,26 @@ export const handleApiError = (error: any, fallbackMessage?: string): void => {
 
   switch (status) {
     case 400:
-      Alert.alert('Dados inválidos', message);
-      break;
+      return { type: 'error', title: 'Dados inválidos', message };
     case 401:
-      Alert.alert('Sessão expirada', 'Faça login novamente');
-      break;
+      return { type: 'warning', title: 'Sessão expirada', message: 'Faça login novamente' };
     case 403:
-      Alert.alert('Acesso negado', 'Você não tem permissão para realizar esta ação');
-      break;
+      return { type: 'error', title: 'Acesso negado', message: 'Você não tem permissão para realizar esta ação' };
     case 404:
-      Alert.alert('Não encontrado', message);
-      break;
+      return { type: 'info', title: 'Não encontrado', message };
     case 500:
-      Alert.alert('Erro no servidor', 'Tente novamente mais tarde');
-      break;
+      return { type: 'error', title: 'Erro no servidor', message: 'Tente novamente mais tarde' };
     default:
-      Alert.alert('Erro', message);
+      return { type: 'error', title: 'Erro', message };
   }
 };
 
 /**
- * Show a success message
+ * Get success alert data
  * @param title - The title of the alert
  * @param message - The message to show
+ * @returns Alert data to be used with AlertDialog
  */
-export const showSuccess = (title: string, message: string): void => {
-  Alert.alert(title, message);
-};
-
-/**
- * Show a confirmation dialog
- * @param title - The title of the alert
- * @param message - The message to show
- * @param onConfirm - Callback when user confirms
- * @param onCancel - Optional callback when user cancels
- */
-export const showConfirmation = (
-  title: string,
-  message: string,
-  onConfirm: () => void,
-  onCancel?: () => void
-): void => {
-  Alert.alert(
-    title,
-    message,
-    [
-      {
-        text: 'Cancelar',
-        style: 'cancel',
-        onPress: onCancel,
-      },
-      {
-        text: 'Confirmar',
-        onPress: onConfirm,
-      },
-    ],
-    { cancelable: true }
-  );
+export const getSuccessAlert = (title: string, message: string): ErrorAlertData => {
+  return { type: 'success', title, message };
 };

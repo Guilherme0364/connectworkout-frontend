@@ -20,7 +20,7 @@ type FormData = {
 }
 
 const SignInScreen = () => {
-    const { login, clearDevStorage } = useAuthContext();
+    const { login } = useAuthContext();
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -117,11 +117,11 @@ const SignInScreen = () => {
                 {errors.password && <Text style={styles.error}>{errors.password.message}</Text>}
 
                 {isLoading ? (
-                    <ActivityIndicator size="large" color="#A9F13C" style={{ marginTop: 20 }} />
+                    <ActivityIndicator size="large" color="#BBF246" style={{ marginTop: 20 }} />
                 ) : (
                     <Button
                         text="Entrar"
-                        color="#A9F13C"
+                        color="#BBF246"
                         marginTop={20}
                         onPress={handleSubmit(onSubmit)}
                     />
@@ -133,16 +133,6 @@ const SignInScreen = () => {
                         Registre-se
                     </Link>
                 </View>
-
-                {/* Development Debug Button */}
-                {__DEV__ && (
-                    <Button
-                        text="Clear Storage (Dev)"
-                        color="#EF4444"
-                        marginTop={20}
-                        onPress={clearDevStorage}
-                    />
-                )}
             </KeyboardAvoidingView>
         </SafeAreaView>
     );

@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { Theme } from '../../styles/theme';
 
 interface StatCardProps {
 	title: string;
@@ -26,12 +27,12 @@ function StatCard({ title, value, subtitle, icon, color, trend }: StatCardProps)
 						<Ionicons
 							name={trend.isPositive ? 'trending-up' : 'trending-down'}
 							size={16}
-							color={trend.isPositive ? '#10B981' : '#EF4444'}
+							color={trend.isPositive ? Theme.colors.success : Theme.colors.error}
 						/>
 						<Text
 							style={[
 								styles.trendText,
-								{ color: trend.isPositive ? '#10B981' : '#EF4444' },
+								{ color: trend.isPositive ? Theme.colors.success : Theme.colors.error },
 							]}
 						>
 							{Math.abs(trend.value)}%
@@ -48,7 +49,7 @@ function StatCard({ title, value, subtitle, icon, color, trend }: StatCardProps)
 
 const styles = StyleSheet.create({
 	container: {
-		backgroundColor: '#FFFFFF',
+		backgroundColor: Theme.colors.surface,
 		borderRadius: 12,
 		padding: 16,
 		flex: 1,
@@ -87,18 +88,18 @@ const styles = StyleSheet.create({
 	value: {
 		fontSize: 24,
 		fontWeight: '700',
-		color: '#111827',
+		color: Theme.colors.textPrimary,
 		marginBottom: 4,
 	},
 	title: {
 		fontSize: 14,
 		fontWeight: '500',
-		color: '#6B7280',
+		color: Theme.colors.textSecondary,
 		marginBottom: 2,
 	},
 	subtitle: {
 		fontSize: 12,
-		color: '#9CA3AF',
+		color: Theme.colors.textTertiary,
 	},
 });
 

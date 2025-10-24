@@ -206,7 +206,7 @@ export default function EditProfileScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#C4FF0D" />
+          <ActivityIndicator size="large" color="#BBF246" />
           <Text style={styles.loadingText}>Carregando perfil...</Text>
         </View>
       </SafeAreaView>
@@ -469,7 +469,7 @@ const styles = StyleSheet.create({
     color: '#000',
   },
   saveButton: {
-    backgroundColor: '#C4FF0D',
+    backgroundColor: '#BBF246',
     paddingVertical: 16,
     borderRadius: 8,
     alignItems: 'center',

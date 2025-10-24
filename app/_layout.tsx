@@ -1,10 +1,13 @@
 import { Slot } from 'expo-router';
 import { AuthProvider } from './contexts/AuthContext';
+import { AlertProvider } from './contexts/AlertContext';
 
 export default function RootLayout() {
 	return (
 		<AuthProvider>
-			<Slot />
+			<AlertProvider>
+				<Slot />
+			</AlertProvider>
 		</AuthProvider>
 	);
 }

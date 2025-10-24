@@ -9,6 +9,7 @@ import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { WorkoutDay } from '../types/api.types';
 import { DayOfWeekLabels } from '../types/api.types';
+import { Theme } from '../styles/theme';
 
 interface DayCardProps {
   day: WorkoutDay;
@@ -24,7 +25,7 @@ const DayCard: React.FC<DayCardProps> = ({ day, onPress, onDelete }) => {
       <View style={styles.content}>
         <View style={styles.dayInfo}>
           <View style={styles.iconContainer}>
-            <Ionicons name="calendar" size={24} color="#3B82F6" />
+            <Ionicons name="calendar" size={24} color={Theme.colors.primary} />
           </View>
           <View style={styles.textContainer}>
             <Text style={styles.dayName}>{DayOfWeekLabels[day.dayOfWeek]}</Text>
@@ -43,11 +44,11 @@ const DayCard: React.FC<DayCardProps> = ({ day, onPress, onDelete }) => {
                 onDelete();
               }}
             >
-              <Ionicons name="trash-outline" size={20} color="#EF4444" />
+              <Ionicons name="trash-outline" size={20} color={Theme.colors.error} />
             </Pressable>
           )}
           {onPress && (
-            <Ionicons name="chevron-forward-outline" size={20} color="#9CA3AF" />
+            <Ionicons name="chevron-forward-outline" size={20} color={Theme.colors.textTertiary} />
           )}
         </View>
       </View>
@@ -57,7 +58,7 @@ const DayCard: React.FC<DayCardProps> = ({ day, onPress, onDelete }) => {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Theme.colors.surface,
     borderRadius: 12,
     marginBottom: 12,
     shadowColor: '#000',
@@ -84,7 +85,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#3B82F615',
+    backgroundColor: `${Theme.colors.primary}15`,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -95,12 +96,12 @@ const styles = StyleSheet.create({
   dayName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#111827',
+    color: Theme.colors.textPrimary,
     marginBottom: 4,
   },
   exerciseCount: {
     fontSize: 14,
-    color: '#6B7280',
+    color: Theme.colors.textSecondary,
   },
   actions: {
     flexDirection: 'row',

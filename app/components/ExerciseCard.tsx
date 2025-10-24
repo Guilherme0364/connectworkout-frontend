@@ -8,6 +8,12 @@ import React from 'react';
 import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { Exercise } from '../types/api.types';
+import {
+  translateBodyPart,
+  translateEquipment,
+  capitalizeFirst,
+} from '../utils/exerciseTranslations';
+import { Theme } from '../styles/theme';
 
 interface ExerciseCardProps {
   exercise: Exercise;
@@ -29,7 +35,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
       <View style={styles.content}>
         {draggable && (
           <View style={styles.dragHandle}>
-            <Ionicons name="reorder-two" size={24} color="#9CA3AF" />
+            <Ionicons name="reorder-two" size={24} color={Theme.colors.textTertiary} />
           </View>
         )}
 
@@ -46,7 +52,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
 
           <View style={styles.details}>
             <View style={styles.detailRow}>
-              <Ionicons name="fitness-outline" size={14} color="#6B7280" />
+              <Ionicons name="fitness-outline" size={14} color={Theme.colors.textSecondary} />
               <Text style={styles.detailText}>
                 {exercise.sets} × {exercise.repetitions}
               </Text>
@@ -54,14 +60,14 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
 
             {exercise.weight && (
               <View style={styles.detailRow}>
-                <Ionicons name="barbell-outline" size={14} color="#6B7280" />
+                <Ionicons name="barbell-outline" size={14} color={Theme.colors.textSecondary} />
                 <Text style={styles.detailText}>{exercise.weight} kg</Text>
               </View>
             )}
 
             {exercise.restSeconds && (
               <View style={styles.detailRow}>
-                <Ionicons name="time-outline" size={14} color="#6B7280" />
+                <Ionicons name="time-outline" size={14} color={Theme.colors.textSecondary} />
                 <Text style={styles.detailText}>{exercise.restSeconds}s</Text>
               </View>
             )}
@@ -69,7 +75,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
 
           {exercise.notes && (
             <View style={styles.notesContainer}>
-              <Ionicons name="document-text-outline" size={14} color="#6B7280" />
+              <Ionicons name="document-text-outline" size={14} color={Theme.colors.textSecondary} />
               <Text style={styles.notes} numberOfLines={2}>
                 {exercise.notes}
               </Text>
@@ -78,10 +84,14 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
 
           <View style={styles.tags}>
             <View style={styles.tag}>
-              <Text style={styles.tagText}>{exercise.bodyPart}</Text>
+              <Text style={styles.tagText}>
+                {capitalizeFirst(translateBodyPart(exercise.bodyPart))}
+              </Text>
             </View>
             <View style={styles.tag}>
-              <Text style={styles.tagText}>{exercise.equipment}</Text>
+              <Text style={styles.tagText}>
+                {capitalizeFirst(translateEquipment(exercise.equipment))}
+              </Text>
             </View>
           </View>
         </View>
@@ -96,7 +106,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
                   onEdit();
                 }}
               >
-                <Ionicons name="create-outline" size={20} color="#3B82F6" />
+                <Ionicons name="create-outline" size={20} color={Theme.colors.primary} />
               </Pressable>
             )}
             {onDelete && (
@@ -107,7 +117,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
                   onDelete();
                 }}
               >
-                <Ionicons name="trash-outline" size={20} color="#EF4444" />
+                <Ionicons name="trash-outline" size={20} color={Theme.colors.error} />
               </Pressable>
             )}
           </View>
@@ -119,7 +129,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Theme.colors.surface,
     borderRadius: 12,
     marginBottom: 12,
     shadowColor: '#000',
@@ -144,7 +154,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 8,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: Theme.colors.gray100,
   },
   info: {
     flex: 1,
@@ -153,7 +163,7 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#111827',
+    color: Theme.colors.textPrimary,
     marginBottom: 8,
   },
   details: {
@@ -169,21 +179,21 @@ const styles = StyleSheet.create({
   },
   detailText: {
     fontSize: 14,
-    color: '#6B7280',
+    color: Theme.colors.textSecondary,
   },
   notesContainer: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 4,
     marginBottom: 8,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: Theme.colors.gray50,
     padding: 8,
     borderRadius: 6,
   },
   notes: {
     flex: 1,
     fontSize: 12,
-    color: '#6B7280',
+    color: Theme.colors.textSecondary,
     fontStyle: 'italic',
   },
   tags: {
@@ -192,14 +202,14 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   tag: {
-    backgroundColor: '#3B82F615',
+    backgroundColor: `${Theme.colors.primary}15`,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
   },
   tagText: {
     fontSize: 11,
-    color: '#3B82F6',
+    color: Theme.components.badgeSuccessText,
     fontWeight: '500',
     textTransform: 'capitalize',
   },

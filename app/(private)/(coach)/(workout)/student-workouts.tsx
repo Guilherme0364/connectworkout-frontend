@@ -116,7 +116,7 @@ export default function CoachStudentWorkouts() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#3B82F6" />
+          <ActivityIndicator size="large" color="#BBF246" />
           <Text style={styles.loadingText}>Carregando treinos...</Text>
         </View>
       </SafeAreaView>
@@ -244,7 +244,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#BBF246',
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',

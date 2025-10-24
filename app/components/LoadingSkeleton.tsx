@@ -6,6 +6,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import { View, StyleSheet, Animated } from 'react-native';
+import { Theme } from '../styles/theme';
 
 type SkeletonType = 'workout' | 'exercise' | 'day' | 'list';
 
@@ -103,7 +104,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   workoutCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Theme.colors.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -114,7 +115,7 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   exerciseCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Theme.colors.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -125,7 +126,7 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   dayCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Theme.colors.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -136,7 +137,7 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   listItem: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Theme.colors.surface,
     borderRadius: 8,
     padding: 12,
     marginBottom: 8,
@@ -153,12 +154,12 @@ const styles = StyleSheet.create({
   },
   skeletonLine: {
     height: 16,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: Theme.components.skeleton,
     borderRadius: 4,
     marginBottom: 8,
   },
   skeletonBox: {
-    backgroundColor: '#E5E7EB',
+    backgroundColor: Theme.components.skeleton,
     borderRadius: 8,
   },
   titleLine: {

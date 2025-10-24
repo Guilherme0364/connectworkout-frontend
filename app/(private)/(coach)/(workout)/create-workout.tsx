@@ -90,7 +90,8 @@ export default function CoachCreateWorkout() {
               </Text>
               <TextInput
                 style={[styles.input, error ? styles.inputError : null]}
-                placeholder="Ex: Treino A, Treino de Segunda, etc."
+                placeholder="Ex: Treino A, Treino B, Treino de Força"
+                placeholderTextColor="#9CA3AF"
                 value={workoutName}
                 onChangeText={(text) => {
                   setWorkoutName(text);
@@ -109,7 +110,7 @@ export default function CoachCreateWorkout() {
 
           <View style={styles.infoCard}>
             <View style={styles.infoIcon}>
-              <Ionicons name="information-circle" size={24} color="#3B82F6" />
+              <Ionicons name="information-circle" size={24} color="#BBF246" />
             </View>
             <View style={styles.infoContent}>
               <Text style={styles.infoTitle}>Próximo Passo</Text>
@@ -282,7 +283,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F3F4F6',
   },
   createButton: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#BBF246',
   },
   buttonDisabled: {
     opacity: 0.5,

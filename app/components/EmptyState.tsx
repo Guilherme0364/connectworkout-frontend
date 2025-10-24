@@ -8,6 +8,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { Theme } from '../styles/theme';
 
 export type IconName = keyof typeof Ionicons.glyphMap;
 
@@ -23,7 +24,7 @@ export default function EmptyState({
   icon,
   title,
   description,
-  iconColor = '#9CA3AF',
+  iconColor = Theme.colors.textTertiary,
   style,
 }: EmptyStateProps) {
   return (
@@ -51,13 +52,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#111827',
+    color: Theme.colors.textPrimary,
     textAlign: 'center',
     marginBottom: 12,
   },
   description: {
     fontSize: 16,
-    color: '#6B7280',
+    color: Theme.colors.textSecondary,
     textAlign: 'center',
     lineHeight: 24,
     maxWidth: 320,

@@ -144,6 +144,70 @@ export class ExerciseService {
       throw error;
     }
   }
+
+  /**
+   * Search exercises by name with pagination
+   * Requires authentication
+   *
+   * @param name - Exercise name to search for
+   * @param limit - Maximum number of results (default: 30)
+   * @param offset - Number of results to skip (default: 0)
+   */
+  static async searchExercisesWithPagination(
+    name: string,
+    limit: number = 30,
+    offset: number = 0
+  ): Promise<import('../types/api.types').ExerciseSearchResponse> {
+    try {
+      const params = new URLSearchParams({
+        name: encodeURIComponent(name),
+        limit: limit.toString(),
+        offset: offset.toString(),
+      });
+      const url = `${API_ENDPOINTS.EXERCISES.SEARCH}?${params}`;
+      const response = await apiClient.get<import('../types/api.types').ExerciseSearchResponse>(url);
+      return response;
+    } catch (error) {
+      console.error('Search exercises with pagination error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Filter exercises by multiple criteria with pagination
+   * Requires authentication
+   *
+   * @param filters - Filter criteria (name, bodyPart, equipment, target)
+   * @param limit - Maximum number of results (default: 30)
+   * @param offset - Number of results to skip (default: 0)
+   */
+  static async filterExercises(
+    filters: {
+      name?: string;
+      bodyPart?: string;
+      equipment?: string;
+      target?: string;
+    },
+    limit: number = 30,
+    offset: number = 0
+  ): Promise<import('../types/api.types').ExerciseFilterResponse> {
+    try {
+      const params = new URLSearchParams({
+        ...(filters.name && { name: filters.name }),
+        ...(filters.bodyPart && { bodyPart: filters.bodyPart }),
+        ...(filters.equipment && { equipment: filters.equipment }),
+        ...(filters.target && { target: filters.target }),
+        limit: limit.toString(),
+        offset: offset.toString(),
+      });
+      const url = `${API_ENDPOINTS.EXERCISES.FILTER}?${params}`;
+      const response = await apiClient.get<import('../types/api.types').ExerciseFilterResponse>(url);
+      return response;
+    } catch (error) {
+      console.error('Filter exercises error:', error);
+      throw error;
+    }
+  }
 }
 
 export default ExerciseService;

@@ -12,20 +12,32 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../../hooks/useAuth';
+import { useAuthContext } from '../../../contexts/AuthContext';
 import StatCard from '../../../components/dashboard/StatCard';
 import { InstructorService, WorkoutService } from '../../../services';
 
 export default function CoachProfile() {
 	const { user, logout } = useAuth();
+	const { isAuthenticated, isLoading: authLoading } = useAuthContext();
 	const router = useRouter();
 	const [studentsCount, setStudentsCount] = useState(0);
 	const [totalWorkouts, setTotalWorkouts] = useState(0);
 	const [loadingStats, setLoadingStats] = useState(true);
 
-	// Load statistics on mount
+	// Load statistics on mount, but only if authenticated
 	useEffect(() => {
-		loadStatistics();
-	}, []);
+		// Wait for auth check to complete
+		if (authLoading) {
+			return;
+		}
+
+		// Only fetch if authenticated
+		if (isAuthenticated) {
+			loadStatistics();
+		} else {
+			setLoadingStats(false);
+		}
+	}, [authLoading, isAuthenticated]);
 
 	const loadStatistics = async () => {
 		try {
@@ -44,9 +56,10 @@ export default function CoachProfile() {
 			// Calculate total count
 			const total = workoutsArrays.reduce((sum, workouts) => sum + workouts.length, 0);
 			setTotalWorkouts(total);
-		} catch (error) {
+		} catch (error: any) {
 			console.error('Failed to load statistics:', error);
-			// Don't show error to user, just keep counts at 0
+			// Don't show error to user for 401 errors
+			// For other errors, just keep counts at 0
 		} finally {
 			setLoadingStats(false);
 		}
@@ -96,13 +109,13 @@ export default function CoachProfile() {
 				<View style={styles.card}>
 					<View style={styles.userInfo}>
 						<View style={styles.avatar}>
-							<Ionicons name="person" size={40} color="#3B82F6" />
+							<Ionicons name="person" size={40} color="#BBF246" />
 						</View>
 						<View style={styles.userDetails}>
 							<Text style={styles.userName}>{user?.name || 'Coach'}</Text>
 							<Text style={styles.userEmail}>{user?.email || ''}</Text>
 							<View style={styles.badge}>
-								<Ionicons name="fitness" size={14} color="#3B82F6" />
+								<Ionicons name="fitness" size={14} color="#BBF246" />
 								<Text style={styles.badgeText}>Personal Trainer</Text>
 							</View>
 						</View>
@@ -116,7 +129,7 @@ export default function CoachProfile() {
 
 				{loadingStats ? (
 					<View style={styles.statsLoadingContainer}>
-						<ActivityIndicator size="small" color="#3B82F6" />
+						<ActivityIndicator size="small" color="#BBF246" />
 						<Text style={styles.statsLoadingText}>Carregando estatísticas...</Text>
 					</View>
 				) : (
@@ -126,12 +139,12 @@ export default function CoachProfile() {
 							value={studentsCount}
 							subtitle="cadastrados"
 							icon="people"
-							color="#3B82F6"
+							color="#BBF246"
 						/>
 						<StatCard
 							title="Treinos Criados"
 							value={totalWorkouts}
-							subtitle="programas"
+							subtitle="no total"
 							icon="barbell"
 							color="#10B981"
 						/>
@@ -230,7 +243,7 @@ const styles = StyleSheet.create({
 	badgeText: {
 		fontSize: 12,
 		fontWeight: '600',
-		color: '#3B82F6',
+		color: '#BBF246',
 	},
 	sectionHeader: {
 		marginTop: 8,

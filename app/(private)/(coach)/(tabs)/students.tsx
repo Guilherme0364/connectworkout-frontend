@@ -20,20 +20,33 @@ import ProgressBar from '../../../components/dashboard/ProgressBar';
 import EmptyState from '../../../components/EmptyState';
 import { InstructorService } from '../../../services';
 import { handleApiError } from '../../../utils/errorHandler';
+import { useAuthContext } from '../../../contexts/AuthContext';
 import type { StudentSummaryDto } from '../../../types/api.types';
 
 export default function Students() {
 	const router = useRouter();
+	const { isAuthenticated, isLoading: authLoading } = useAuthContext();
 	const [searchQuery, setSearchQuery] = useState('');
 	const [selectedFilter, setSelectedFilter] = useState<'all' | 'active' | 'inactive'>('all');
 	const [students, setStudents] = useState<StudentSummaryDto[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [refreshing, setRefreshing] = useState(false);
 
-	// Fetch students on mount
+	// Fetch students on mount, but only if authenticated
 	useEffect(() => {
-		fetchStudents();
-	}, []);
+		// Wait for auth check to complete
+		if (authLoading) {
+			return;
+		}
+
+		// Only fetch if authenticated
+		if (isAuthenticated) {
+			fetchStudents();
+		} else {
+			// Not authenticated, stop loading
+			setLoading(false);
+		}
+	}, [authLoading, isAuthenticated]);
 
 	const fetchStudents = async (isRefreshing = false) => {
 		try {
@@ -45,8 +58,11 @@ export default function Students() {
 
 			const data = await InstructorService.getStudents();
 			setStudents(data);
-		} catch (error) {
-			handleApiError(error, 'Não foi possível carregar os alunos');
+		} catch (error: any) {
+			// Don't show error UI for 401 - auth context will handle redirect
+			if (error?.status !== 401) {
+				handleApiError(error, 'Não foi possível carregar os alunos');
+			}
 		} finally {
 			setLoading(false);
 			setRefreshing(false);
@@ -180,7 +196,7 @@ export default function Students() {
 		return (
 			<SafeAreaView style={styles.container}>
 				<View style={styles.loadingContainer}>
-					<ActivityIndicator size="large" color="#3B82F6" />
+					<ActivityIndicator size="large" color="#BBF246" />
 					<Text style={styles.loadingText}>Carregando alunos...</Text>
 				</View>
 			</SafeAreaView>
@@ -208,7 +224,7 @@ export default function Students() {
 						value={students.length}
 						subtitle="cadastrados"
 						icon="people"
-						color="#3B82F6"
+						color="#BBF246"
 					/>
 					<StatCard
 						title="Alunos Ativos"
@@ -278,7 +294,7 @@ export default function Students() {
 								<View style={styles.studentCard}>
 									<View style={styles.studentHeader}>
 										<View style={styles.studentAvatar}>
-											<Ionicons name="person" size={24} color="#3B82F6" />
+											<Ionicons name="person" size={24} color="#BBF246" />
 										</View>
 										<View style={styles.studentInfo}>
 											<Text style={styles.studentName}>{student.name}</Text>
@@ -315,7 +331,7 @@ export default function Students() {
 													handleManageWorkouts(student.id);
 												}}
 											>
-												<Ionicons name="settings-outline" size={18} color="#3B82F6" />
+												<Ionicons name="create-outline" size={18} color="#BBF246" />
 											</Pressable>
 											<Ionicons name="chevron-forward-outline" size={20} color="#9CA3AF" />
 										</View>
@@ -354,7 +370,7 @@ export default function Students() {
 											<ProgressBar
 												value={getProgress(student)}
 												label="Progresso de Hoje"
-												color="#3B82F6"
+												color="#BBF246"
 												showPercentage={false}
 											/>
 										</>
@@ -373,8 +389,8 @@ export default function Students() {
 				>
 					<View style={styles.quickActions}>
 						<Pressable style={styles.actionButton} onPress={handleAddStudent}>
-							<View style={[styles.actionIcon, { backgroundColor: '#3B82F615' }]}>
-								<Ionicons name="person-add" size={24} color="#3B82F6" />
+							<View style={[styles.actionIcon, { backgroundColor: '#BBF24615' }]}>
+								<Ionicons name="person-add" size={24} color="#BBF246" />
 							</View>
 							<Text style={styles.actionText}>Adicionar Aluno</Text>
 						</Pressable>
@@ -465,7 +481,7 @@ const styles = StyleSheet.create({
 		elevation: 2,
 	},
 	filterTabActive: {
-		backgroundColor: '#3B82F6',
+		backgroundColor: '#BBF246',
 	},
 	filterTabText: {
 		fontSize: 14,
@@ -579,7 +595,7 @@ const styles = StyleSheet.create({
 		flexWrap: 'wrap',
 	},
 	goalTag: {
-		backgroundColor: '#3B82F615',
+		backgroundColor: '#BBF24615',
 		paddingHorizontal: 8,
 		paddingVertical: 4,
 		borderRadius: 12,

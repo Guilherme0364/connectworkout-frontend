@@ -14,6 +14,7 @@ import {
   TouchableWithoutFeedback,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { Theme } from '../styles/theme';
 
 interface ConfirmDialogProps {
   visible: boolean;
@@ -34,9 +35,9 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   message,
   confirmText = 'Confirmar',
   cancelText = 'Cancelar',
-  confirmColor = '#EF4444',
+  confirmColor = Theme.colors.error,
   icon = 'alert-circle-outline',
-  iconColor = '#EF4444',
+  iconColor = Theme.colors.error,
   onConfirm,
   onCancel,
 }) => {
@@ -90,7 +91,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   dialog: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Theme.colors.white,
     borderRadius: 16,
     padding: 24,
     width: '100%',
@@ -111,13 +112,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#111827',
+    color: Theme.colors.textPrimary,
     textAlign: 'center',
     marginBottom: 12,
   },
   message: {
     fontSize: 16,
-    color: '#6B7280',
+    color: Theme.colors.textSecondary,
     textAlign: 'center',
     lineHeight: 22,
     marginBottom: 24,
@@ -136,20 +137,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   cancelButton: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: Theme.colors.gray100,
   },
   confirmButton: {
-    backgroundColor: '#EF4444',
+    backgroundColor: Theme.colors.error,
   },
   cancelButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#374151',
+    color: Theme.colors.gray700,
   },
   confirmButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: Theme.colors.white,
   },
 });
 

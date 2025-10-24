@@ -132,7 +132,7 @@ export default function TrainerProfileScreen() {
           <View style={styles.headerSpacer} />
         </View>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#C4FF0D" />
+          <ActivityIndicator size="large" color="#BBF246" />
           <Text style={styles.loadingText}>Carregando...</Text>
         </View>
       </SafeAreaView>
@@ -337,13 +337,13 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   retryButton: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#BBF246',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
   },
   retryButtonText: {
-    color: '#FFFFFF',
+    color: '#1A1A1A',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -399,7 +399,7 @@ const styles = StyleSheet.create({
     paddingTop: 24,
   },
   primaryButton: {
-    backgroundColor: '#C4FF0D',
+    backgroundColor: '#BBF246',
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
@@ -476,7 +476,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 12,
     borderRadius: 8,
-    backgroundColor: '#C4FF0D',
+    backgroundColor: '#BBF246',
     alignItems: 'center',
   },
   modalConfirmText: {

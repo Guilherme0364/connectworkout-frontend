@@ -73,6 +73,26 @@ export class WorkoutService {
   }
 
   /**
+   * Create a new workout with days and exercises in a single request (BULK)
+   * Requires authentication and Instructor role
+   * This is the recommended way to create workouts with exercises
+   */
+  static async createWorkoutBulk(
+    data: import('../types/api.types').BulkWorkoutRequest
+  ): Promise<import('../types/api.types').BulkWorkoutResponse> {
+    try {
+      const response = await apiClient.post<import('../types/api.types').BulkWorkoutResponse>(
+        API_ENDPOINTS.WORKOUTS.CREATE_WORKOUT_BULK,
+        data
+      );
+      return response;
+    } catch (error) {
+      console.error('Create bulk workout error:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Update a workout's name or active status
    * Requires authentication and Instructor role
    */

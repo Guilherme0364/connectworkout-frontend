@@ -192,7 +192,7 @@ export default function SignUpScreen() {
                 {errors.role && <Text style={styles.errorText}>{errors.role.message}</Text>}
 
                 {isLoading ? (
-                    <ActivityIndicator size="large" color="#A9F13C" style={{ marginTop: 16 }} />
+                    <ActivityIndicator size="large" color="#BBF246" style={{ marginTop: 16 }} />
                 ) : (
                     <Button text="Registre-se" marginTop={16} onPress={handleSubmit(onSubmit)} />
                 )}

@@ -282,3 +282,42 @@ export interface UpdateExerciseRequest {
   restSeconds?: number;
   notes?: string;
 }
+
+// Bulk workout creation
+export interface BulkWorkoutDayRequest {
+  dayOfWeek: DayOfWeek;
+  exercises: AddExerciseRequest[];
+}
+
+export interface BulkWorkoutRequest {
+  name: string;
+  studentId: number;
+  workoutDays: BulkWorkoutDayRequest[];
+}
+
+export interface BulkWorkoutResponse {
+  id: number;
+  name: string;
+  message: string;
+}
+
+// Exercise search and filter responses
+export interface ExerciseSearchResponse {
+  data: ExerciseDbModel[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface ExerciseFilterResponse {
+  data: ExerciseDbModel[];
+  total: number;
+  limit: number;
+  offset: number;
+  filters: {
+    name?: string;
+    bodyPart?: string;
+    equipment?: string;
+    target?: string;
+  };
+}

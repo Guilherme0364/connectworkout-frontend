@@ -32,11 +32,7 @@ import ExerciseCard from '../../../components/ExerciseCard';
 import ConfirmDialog from '../../../components/ConfirmDialog';
 import { WorkoutService, ExerciseService } from '../../../services';
 import { handleApiError, showSuccess } from '../../../utils/errorHandler';
-import {
-	translateBodyPart,
-	translateEquipment,
-	capitalizeFirst,
-} from '../../../utils/exerciseTranslations';
+import { ExerciseImageService, RESOLUTION } from '../../../services/exerciseImage.service';
 import type {
 	Workout,
 	WorkoutDay,
@@ -82,6 +78,7 @@ export default function EditWorkout() {
 	const [searching, setSearching] = useState(false);
 	const [selectedExerciseDb, setSelectedExerciseDb] = useState<ExerciseDbModel | null>(null);
 	const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
+	const [searchError, setSearchError] = useState<string | null>(null);
 
 	// Exercise Form
 	const [exerciseSets, setExerciseSets] = useState('3');
@@ -244,6 +241,8 @@ export default function EditWorkout() {
 		setSelectedExerciseDb(null);
 		setExerciseSearchQuery('');
 		setSearchResults([]);
+		setSearchError(null);
+		setSearching(false);
 		setExerciseSets('3');
 		setExerciseReps('10');
 		setExerciseWeight('');
@@ -254,6 +253,7 @@ export default function EditWorkout() {
 
 	const handleSearchExercises = (query: string) => {
 		setExerciseSearchQuery(query);
+		setSearchError(null);
 
 		// Clear previous timeout
 		if (searchTimeout) {
@@ -264,6 +264,7 @@ export default function EditWorkout() {
 		if (query.trim().length < 2) {
 			setSearchResults([]);
 			setSearching(false);
+			setSearchError(null);
 			return;
 		}
 
@@ -273,11 +274,28 @@ export default function EditWorkout() {
 		// Debounce the API call
 		const timeout = setTimeout(async () => {
 			try {
+				console.log('🔍 Searching exercises with query:', query.trim());
 				const results = await ExerciseService.searchExercises(query.trim());
+				console.log('✅ Search results received:', results.length, 'exercises');
+				console.log('📋 First result sample:', results[0]);
+
 				setSearchResults(results);
-			} catch (error) {
-				console.error('Search exercises error:', error);
+				setSearchError(null);
+
+				if (results.length === 0) {
+					setSearchError('No exercises found. Try searching in English (e.g., "dumbbell", "press", "squat")');
+				}
+			} catch (error: any) {
+				console.error('❌ Search exercises error:', error);
+				console.error('Error details:', {
+					message: error.message,
+					status: error.status,
+					errors: error.errors,
+				});
 				setSearchResults([]);
+				setSearchError(
+					error.message || 'Failed to search exercises. Please check your connection and try again.'
+				);
 			} finally {
 				setSearching(false);
 			}
@@ -300,6 +318,28 @@ export default function EditWorkout() {
 				Alert.alert('Erro', 'Selecione um exercício');
 			}
 			return;
+		}
+
+		// Validate all required fields exist for new exercises
+		if (exerciseModalMode === 'add' && selectedExerciseDb) {
+			const missingFields: string[] = [];
+
+			if (!selectedExerciseDb.gifUrl) missingFields.push('imagem (gifUrl)');
+			if (!selectedExerciseDb.bodyPart) missingFields.push('parte do corpo (bodyPart)');
+			if (!selectedExerciseDb.equipment) missingFields.push('equipamento (equipment)');
+
+			if (missingFields.length > 0) {
+				const errorMessage = `Erro: O exercício selecionado está incompleto. Campos faltando: ${missingFields.join(', ')}`;
+				console.error('❌ Missing required fields for exercise:', selectedExerciseDb);
+				console.error('❌ Missing fields:', missingFields);
+
+				if (Platform.OS === 'web') {
+					window.alert(errorMessage);
+				} else {
+					Alert.alert('Erro', errorMessage);
+				}
+				return;
+			}
 		}
 
 		if (!exerciseSets.trim() || !exerciseReps.trim()) {
@@ -338,22 +378,36 @@ export default function EditWorkout() {
 
 			if (exerciseModalMode === 'add' && selectedExerciseDb) {
 				// Add new exercise
+				const exercisePayload = {
+					exerciseDbId: selectedExerciseDb.id,
+					name: selectedExerciseDb.name,
+					bodyPart: selectedExerciseDb.bodyPart,
+					equipment: selectedExerciseDb.equipment,
+					gifUrl: selectedExerciseDb.gifUrl,
+					sets: exerciseSets.trim(),
+					repetitions: exerciseReps.trim(),
+					weight: parsedWeight ?? null,
+					restSeconds: parsedRest ?? null,
+					notes: exerciseNotes.trim() || "",
+				};
+
+				console.log('➕ Adding exercise with COMPLETE data:', exercisePayload);
+				console.log('✅ All required fields present:', {
+					exerciseDbId: !!exercisePayload.exerciseDbId,
+					name: !!exercisePayload.name,
+					bodyPart: !!exercisePayload.bodyPart,
+					equipment: !!exercisePayload.equipment,
+					gifUrl: !!exercisePayload.gifUrl,
+					sets: !!exercisePayload.sets,
+					repetitions: !!exercisePayload.repetitions,
+				});
+
 				await WorkoutService.addExercise(
 					Number(workoutId),
 					selectedDayForExercise.id,
-					{
-						exerciseDbId: selectedExerciseDb.id,
-						name: selectedExerciseDb.name,
-						bodyPart: selectedExerciseDb.bodyPart,
-						equipment: selectedExerciseDb.equipment,
-						gifUrl: selectedExerciseDb.gifUrl,
-						sets: exerciseSets.trim(),
-						repetitions: exerciseReps.trim(),
-						weight: parsedWeight ?? undefined,
-						restSeconds: parsedRest ?? undefined,
-						notes: exerciseNotes.trim() || undefined,
-					}
+					exercisePayload
 				);
+				console.log('✅ Exercise added successfully');
 				showSuccess('Sucesso', 'Exercício adicionado com sucesso');
 			} else if (exerciseModalMode === 'edit' && selectedExercise) {
 				// Update existing exercise
@@ -366,15 +420,31 @@ export default function EditWorkout() {
 						repetitions: exerciseReps.trim(),
 						weight: parsedWeight ?? undefined,
 						restSeconds: parsedRest ?? undefined,
-						notes: exerciseNotes.trim() || undefined,
+						notes: exerciseNotes.trim() || "",
 					}
 				);
 				showSuccess('Sucesso', 'Exercício atualizado com sucesso');
 			}
 
+			// Close modal and reset state BEFORE reloading
 			setExerciseModalVisible(false);
-			loadWorkout();
+
+			// Reset all exercise modal state to prevent issues with multiple additions
+			setSelectedExerciseDb(null);
+			setExerciseSearchQuery('');
+			setSearchResults([]);
+			setSearchError(null);
+			setSearching(false);
+			setExerciseSets('3');
+			setExerciseReps('10');
+			setExerciseWeight('');
+			setExerciseRest('60');
+			setExerciseNotes('');
+
+			// Reload workout data
+			await loadWorkout();
 		} catch (error) {
+			console.error('❌ Failed to save exercise:', error);
 			handleApiError(error, 'Não foi possível salvar o exercício');
 		} finally {
 			setSavingExercise(false);
@@ -695,11 +765,18 @@ export default function EditWorkout() {
 									</View>
 								)}
 
-								{!searching && exerciseSearchQuery.length >= 2 && searchResults.length === 0 && (
+								{searchError && !searching && (
+									<View style={styles.errorSearchState}>
+										<Ionicons name="alert-circle-outline" size={48} color="#EF4444" />
+										<Text style={styles.errorSearchText}>{searchError}</Text>
+									</View>
+								)}
+
+								{!searching && !searchError && exerciseSearchQuery.length >= 2 && searchResults.length === 0 && (
 									<View style={styles.emptySearchState}>
 										<Ionicons name="search-outline" size={48} color="#9CA3AF" />
 										<Text style={styles.emptySearchText}>Nenhum exercício encontrado</Text>
-										<Text style={styles.emptySearchHint}>Tente buscar em inglês (ex: "push", "squat", "curl")</Text>
+										<Text style={styles.emptySearchHint}>Tente buscar em inglês (ex: "dumbbell", "press", "squat")</Text>
 									</View>
 								)}
 
@@ -720,13 +797,13 @@ export default function EditWorkout() {
 													onPress={() => handleSelectExerciseDb(item)}
 												>
 													<Image
-														source={{ uri: item.gifUrl }}
+														source={ExerciseImageService.getImageProps(item.id, RESOLUTION.INSTRUCTOR)}
 														style={styles.searchResultImage}
 													/>
 													<View style={styles.searchResultInfo}>
 														<Text style={styles.searchResultName}>{item.name}</Text>
 														<Text style={styles.searchResultMeta}>
-															{capitalizeFirst(translateBodyPart(item.bodyPart))} • {capitalizeFirst(translateEquipment(item.equipment))}
+															{item.bodyPart} • {item.equipment}
 														</Text>
 													</View>
 													{selectedExerciseDb?.id === item.id && (
@@ -747,7 +824,7 @@ export default function EditWorkout() {
 										<Text style={styles.previewLabel}>Exercício Selecionado:</Text>
 										<View style={styles.previewCard}>
 											<Image
-												source={{ uri: selectedExerciseDb.gifUrl }}
+												source={ExerciseImageService.getImageProps(selectedExerciseDb.id, RESOLUTION.INSTRUCTOR)}
 												style={styles.previewImage}
 											/>
 											<View style={styles.previewInfo}>
@@ -755,7 +832,7 @@ export default function EditWorkout() {
 													{selectedExerciseDb.name}
 												</Text>
 												<Text style={styles.previewMeta}>
-													{capitalizeFirst(translateBodyPart(selectedExerciseDb.bodyPart))} • {capitalizeFirst(translateEquipment(selectedExerciseDb.equipment))}
+													{selectedExerciseDb.bodyPart} • {selectedExerciseDb.equipment}
 												</Text>
 											</View>
 										</View>
@@ -1249,6 +1326,22 @@ const styles = StyleSheet.create({
 		fontSize: 14,
 		color: '#6B7280',
 		textAlign: 'center',
+	},
+	errorSearchState: {
+		alignItems: 'center',
+		paddingVertical: 40,
+		paddingHorizontal: 20,
+		backgroundColor: '#FEF2F2',
+		borderRadius: 12,
+		marginBottom: 16,
+	},
+	errorSearchText: {
+		fontSize: 14,
+		fontWeight: '500',
+		color: '#EF4444',
+		marginTop: 12,
+		textAlign: 'center',
+		lineHeight: 20,
 	},
 	searchResultsContainer: {
 		flex: 1,

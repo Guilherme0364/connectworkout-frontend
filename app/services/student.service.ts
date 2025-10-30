@@ -16,6 +16,7 @@ import {
   TrainerDto,
   AcceptTrainerDto,
   ApiResponse,
+  StudentDashboardDto,
 } from '../types/api.types';
 
 class StudentService {
@@ -26,6 +27,17 @@ class StudentService {
   async getProfile(): Promise<StudentProfileDto> {
     const response = await apiClient.get<StudentProfileDto>(
       API_ENDPOINTS.STUDENTS.GET_PROFILE
+    );
+    return response;
+  }
+
+  /**
+   * Get student dashboard data with trainer info, workout count, and active workout
+   * @returns Aggregated dashboard data
+   */
+  async getDashboard(): Promise<StudentDashboardDto> {
+    const response = await apiClient.get<StudentDashboardDto>(
+      API_ENDPOINTS.STUDENTS.GET_DASHBOARD
     );
     return response;
   }

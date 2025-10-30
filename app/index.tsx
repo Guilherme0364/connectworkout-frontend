@@ -1,12 +1,23 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { View, ActivityIndicator } from 'react-native';
-import { Redirect } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 import { useAuth } from './hooks/useAuth';
+import { setRouter } from './utils/globalLogout';
 
 export default function Index() {
 	const { isAuthenticated, isLoading, role, token } = useAuth();
+	const router = useRouter();
+	const routerSetRef = useRef(false);
 
-	// Debug logging only on mount to avoid infinite loops during logout
+	// Set router instance for global logout only once
+	useEffect(() => {
+		if (!routerSetRef.current) {
+			setRouter(router);
+			routerSetRef.current = true;
+		}
+	}, [router]);
+
+	// Debug logging only on mount
 	useEffect(() => {
 		console.log('=== INDEX ROUTE MOUNTED ===');
 		console.log('Initial auth state:', { isLoading, isAuthenticated, role, token: token ? '***' : null });
@@ -16,7 +27,6 @@ export default function Index() {
 
 	// Show loading spinner while checking authentication
 	if (isLoading) {
-		console.log('⏳ Showing loading screen...');
 		return (
 			<View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F9FAFB' }}>
 				<ActivityIndicator size="large" color="#BBF246" />
@@ -24,13 +34,10 @@ export default function Index() {
 		);
 	}
 
-	// Only redirect to private area if user has all required auth data
+	// Redirect based on auth state
 	if (isAuthenticated && role && token) {
-		console.log('🚀 Redirecting to dashboard with role:', role);
 		return <Redirect href="/(private)/(tabs)" />;
 	}
 
-	// Default to login screen for unauthenticated users
-	console.log('🔒 Redirecting to login screen');
 	return <Redirect href="/(auth)/sign-in" />;
 }

@@ -1,15 +1,12 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useStudent } from '../../../contexts/StudentContext';
 import { useRouter } from 'expo-router';
-import DashboardCard from '../../../components/dashboard/DashboardCard';
-import StatCard from '../../../components/dashboard/StatCard';
-import ActivityCard from '../../../components/dashboard/ActivityCard';
-import ProgressBar from '../../../components/dashboard/ProgressBar';
+import { Ionicons } from '@expo/vector-icons';
 import EmptyState from '../../../components/EmptyState';
 
 export default function StudentDashboard() {
-	const { hasTrainer, isLoading, refreshStudentData } = useStudent();
+	const { hasTrainer, trainerRequests, dashboardData, isLoading, refreshStudentData } = useStudent();
 	const router = useRouter();
 
 	useEffect(() => {
@@ -18,15 +15,18 @@ export default function StudentDashboard() {
 	}, []);
 
 	// Show loading state
-	if (isLoading) {
+	if (isLoading && !dashboardData) {
 		return (
 			<SafeAreaView style={styles.container}>
 				<View style={styles.loadingContainer}>
+					<ActivityIndicator size="large" color="#BBF246" />
 					<Text style={styles.loadingText}>Carregando...</Text>
 				</View>
 			</SafeAreaView>
 		);
 	}
+
+	const pendingRequests = trainerRequests.filter(req => req.status === 'pending');
 
 	// Show empty state if student has no trainer
 	if (!hasTrainer) {
@@ -35,21 +35,46 @@ export default function StudentDashboard() {
 				<ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
 					<View style={styles.header}>
 						<Text style={styles.greeting}>Connect Workout</Text>
+						<Text style={styles.welcomeText}>Bem-vindo ao seu treino personalizado</Text>
 					</View>
 
 					<View style={styles.emptyStateCard}>
 						<EmptyState
 							icon="fitness-outline"
-							title="Você ainda não possui exercícios"
-							description="Conecte com um personal para iniciar treinos"
-							iconColor="#C4FF0D"
+							title="Você ainda não possui treinos"
+							description="Aguarde um personal trainer aceitar sua solicitação ou enviar convite para começar"
+							iconColor="#BBF246"
 						/>
-						<TouchableOpacity
-							style={styles.primaryButton}
-							onPress={() => router.push('/student/personal-requests')}
-						>
-							<Text style={styles.primaryButtonText}>Ver Solicitações de Personal</Text>
-						</TouchableOpacity>
+
+						{pendingRequests.length > 0 && (
+							<>
+								<View style={styles.requestsInfo}>
+									<Ionicons name="mail-outline" size={20} color="#BBF246" />
+									<Text style={styles.requestsText}>
+										Você possui {pendingRequests.length} {pendingRequests.length === 1 ? 'solicitação pendente' : 'solicitações pendentes'}
+									</Text>
+								</View>
+								<TouchableOpacity
+									style={styles.primaryButton}
+									onPress={() => router.push('/student/personal-requests')}
+								>
+									<Text style={styles.primaryButtonText}>Ver Solicitações</Text>
+								</TouchableOpacity>
+							</>
+						)}
+					</View>
+
+					{/* Help Card */}
+					<View style={styles.helpCard}>
+						<Ionicons name="information-circle-outline" size={24} color="#3B82F6" />
+						<View style={styles.helpContent}>
+							<Text style={styles.helpTitle}>Como começar?</Text>
+							<Text style={styles.helpText}>
+								• Aguarde um personal trainer enviar uma solicitação{'\n'}
+								• Aceite a solicitação nas notificações{'\n'}
+								• Comece seus treinos personalizados!
+							</Text>
+						</View>
 					</View>
 
 					<View style={styles.bottomSpacing} />
@@ -63,154 +88,108 @@ export default function StudentDashboard() {
 }
 
 function StudentDashboardWithTrainer() {
-	const mockData = {
-		weeklyProgress: 75,
-		streak: 12,
-		workoutsThisWeek: 4,
-		nextSession: 'Tomorrow at 2:00 PM',
-		recentActivities: [
-			{
-				id: 1,
-				title: 'Upper Body Strength',
-				subtitle: 'Completed with Sarah',
-				time: '2 hours ago',
-				status: 'completed' as const,
-				icon: 'fitness-outline' as const,
-			},
-			{
-				id: 2,
-				title: 'Cardio Session',
-				subtitle: 'Scheduled with Mike',
-				time: 'Tomorrow 2:00 PM',
-				status: 'pending' as const,
-				icon: 'heart-outline' as const,
-			},
-			{
-				id: 3,
-				title: 'Nutrition Check-in',
-				subtitle: 'Weekly review',
-				time: 'Friday 10:00 AM',
-				status: 'pending' as const,
-				icon: 'restaurant-outline' as const,
-			},
-		],
-	};
+	const { dashboardData } = useStudent();
+	const router = useRouter();
+
+	if (!dashboardData) return null;
+
+	const { currentTrainer, workoutCount, exerciseCount, activeWorkoutId, studentName } = dashboardData;
 
 	return (
 		<SafeAreaView style={styles.container}>
 			<ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
 				{/* Header */}
 				<View style={styles.header}>
-					<Text style={styles.greeting}>Good morning!</Text>
-					<Text style={styles.welcomeText}>Ready for another great workout?</Text>
+					<Text style={styles.greeting}>Bem-vindo, {studentName}!</Text>
+					<Text style={styles.welcomeText}>Continue seu progresso</Text>
 				</View>
 
-				{/* Stats Row */}
-				<View style={styles.statsRow}>
-					<StatCard
-						title="Current Streak"
-						value={mockData.streak}
-						subtitle="days"
-						icon="flame"
-						color="#F59E0B"
-						trend={{ value: 8, isPositive: true }}
-					/>
-					<StatCard
-						title="This Week"
-						value={mockData.workoutsThisWeek}
-						subtitle="workouts"
-						icon="fitness"
-						color="#10B981"
-						trend={{ value: 12, isPositive: true }}
-					/>
+				{/* Stats Cards */}
+				<View style={styles.statsContainer}>
+					<View style={styles.statCard}>
+						<Ionicons name="fitness-outline" size={32} color="#007AFF" />
+						<Text style={styles.statNumber}>{workoutCount}</Text>
+						<Text style={styles.statLabel}>Treinos</Text>
+					</View>
+
+					<View style={styles.statCard}>
+						<Ionicons name="checkmark-circle-outline" size={32} color="#4CAF50" />
+						<Text style={styles.statNumber}>{activeWorkoutId ? '1' : '0'}</Text>
+						<Text style={styles.statLabel}>Ativo</Text>
+					</View>
+
+					<View style={styles.statCard}>
+						<Ionicons name="barbell-outline" size={32} color="#FF9800" />
+						<Text style={styles.statNumber}>{exerciseCount}</Text>
+						<Text style={styles.statLabel}>Exercícios</Text>
+					</View>
 				</View>
 
-				{/* Today's Workout */}
-				<DashboardCard
-					title="Today's Workout"
-					subtitle="Push Day - Upper Body Focus"
-					icon="barbell-outline"
-					color="#3B82F6"
-					onPress={() => console.log('Start workout pressed')}
-				>
-					<View style={styles.workoutDetails}>
-						<View style={styles.workoutStat}>
-							<Text style={styles.workoutStatValue}>45</Text>
-							<Text style={styles.workoutStatLabel}>minutes</Text>
+				{/* Active Workout CTA */}
+				{activeWorkoutId ? (
+					<TouchableOpacity
+						style={styles.activeWorkoutButton}
+						onPress={() => router.push({
+							pathname: '/(private)/(student)/(workout)/workout-detail',
+							params: { workoutId: activeWorkoutId.toString() }
+						})}
+					>
+						<Ionicons name="play-circle" size={24} color="#fff" />
+						<Text style={styles.activeWorkoutText}>Começar Treino Ativo</Text>
+					</TouchableOpacity>
+				) : (
+					<View style={styles.emptyStateCard}>
+						<EmptyState
+							icon="barbell-outline"
+							title="Aguardando treinos"
+							description="Seu personal trainer adicionará seus treinos em breve. Você será notificado quando os treinos estiverem disponíveis."
+							iconColor="#BBF246"
+						/>
+					</View>
+				)}
+
+				{/* Trainer Info Card */}
+				{currentTrainer && (
+					<View style={styles.trainerCard}>
+						<View style={styles.trainerCardHeader}>
+							<Ionicons name="person-circle-outline" size={24} color="#BBF246" />
+							<Text style={styles.trainerCardTitle}>Seu Personal Trainer</Text>
 						</View>
-						<View style={styles.workoutStat}>
-							<Text style={styles.workoutStatValue}>8</Text>
-							<Text style={styles.workoutStatLabel}>exercises</Text>
-						</View>
-						<View style={styles.workoutStat}>
-							<Text style={styles.workoutStatValue}>3</Text>
-							<Text style={styles.workoutStatLabel}>sets each</Text>
+						<View style={styles.trainerCardContent}>
+							<View style={styles.trainerCardRow}>
+								<Text style={styles.trainerCardLabel}>Nome:</Text>
+								<Text style={styles.trainerCardValue}>{currentTrainer.name}</Text>
+							</View>
+							<View style={styles.trainerCardRow}>
+								<Text style={styles.trainerCardLabel}>Email:</Text>
+								<Text style={styles.trainerCardValue}>{currentTrainer.email}</Text>
+							</View>
+							{currentTrainer.description && (
+								<View style={styles.trainerCardRow}>
+									<Text style={styles.trainerCardLabel}>Sobre:</Text>
+									<Text style={styles.trainerCardValue}>{currentTrainer.description}</Text>
+								</View>
+							)}
+							<View style={styles.trainerCardRow}>
+								<Text style={styles.trainerCardLabel}>Alunos:</Text>
+								<Text style={styles.trainerCardValue}>{currentTrainer.studentCount} {currentTrainer.studentCount === 1 ? 'aluno' : 'alunos'}</Text>
+							</View>
 						</View>
 					</View>
-				</DashboardCard>
+				)}
 
-				{/* Weekly Progress */}
-				<DashboardCard
-					title="Weekly Progress"
-					subtitle="You're doing great! Keep it up!"
-					icon="trending-up-outline"
-					color="#10B981"
-				>
-					<ProgressBar
-						value={mockData.weeklyProgress}
-						label="Weekly Goal Progress"
-						color="#10B981"
-						showPercentage={true}
-					/>
-					<View style={styles.progressStats}>
-						<Text style={styles.progressText}>
-							{mockData.workoutsThisWeek} of 5 workouts completed
+				{/* Info Card */}
+				<View style={styles.infoCard}>
+					<Ionicons name="information-circle-outline" size={24} color="#3B82F6" />
+					<View style={styles.infoContent}>
+						<Text style={styles.infoTitle}>Dicas para Treinar</Text>
+						<Text style={styles.infoText}>
+							• Mantenha a constância nos treinos{'\n'}
+							• Hidrate-se antes, durante e depois{'\n'}
+							• Respeite os tempos de descanso{'\n'}
+							• Em caso de dúvidas, consulte seu personal
 						</Text>
 					</View>
-				</DashboardCard>
-
-				{/* Quick Actions */}
-				<DashboardCard
-					title="Quick Actions"
-					icon="flash-outline"
-					color="#8B5CF6"
-				>
-					<View style={styles.quickActions}>
-						<View style={styles.actionButton}>
-							<View style={[styles.actionIcon, { backgroundColor: '#3B82F615' }]}>
-								<Text style={[styles.actionIconText, { color: '#3B82F6' }]}>📅</Text>
-							</View>
-							<Text style={styles.actionText}>Book Session</Text>
-						</View>
-						<View style={styles.actionButton}>
-							<View style={[styles.actionIcon, { backgroundColor: '#10B98115' }]}>
-								<Text style={[styles.actionIconText, { color: '#10B981' }]}>🍎</Text>
-							</View>
-							<Text style={styles.actionText}>Meal Plan</Text>
-						</View>
-						<View style={styles.actionButton}>
-							<View style={[styles.actionIcon, { backgroundColor: '#F59E0B15' }]}>
-								<Text style={[styles.actionIconText, { color: '#F59E0B' }]}>💬</Text>
-							</View>
-							<Text style={styles.actionText}>Message Coach</Text>
-						</View>
-					</View>
-				</DashboardCard>
-
-				{/* Recent Activities */}
-				<View style={styles.section}>
-					<Text style={styles.sectionTitle}>Recent Activities</Text>
-					{mockData.recentActivities.map((activity) => (
-						<ActivityCard
-							key={activity.id}
-							title={activity.title}
-							subtitle={activity.subtitle}
-							time={activity.time}
-							status={activity.status}
-							icon={activity.icon}
-							onPress={() => console.log('Activity pressed:', activity.title)}
-						/>
-					))}
 				</View>
 
 				<View style={styles.bottomSpacing} />
@@ -248,6 +227,7 @@ const styles = StyleSheet.create({
 		alignItems: 'center',
 	},
 	loadingText: {
+		marginTop: 16,
 		fontSize: 16,
 		color: '#6B7280',
 	},
@@ -262,84 +242,174 @@ const styles = StyleSheet.create({
 		shadowRadius: 8,
 		elevation: 2,
 	},
+	requestsInfo: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		justifyContent: 'center',
+		backgroundColor: '#F0F9FF',
+		padding: 12,
+		borderRadius: 8,
+		marginTop: 16,
+		gap: 8,
+	},
+	requestsText: {
+		fontSize: 14,
+		fontWeight: '500',
+		color: '#111827',
+	},
 	primaryButton: {
-		backgroundColor: '#C4FF0D',
+		backgroundColor: '#BBF246',
 		paddingVertical: 16,
 		paddingHorizontal: 24,
 		borderRadius: 12,
 		alignItems: 'center',
-		marginTop: 16,
+		marginTop: 12,
 	},
 	primaryButtonText: {
 		fontSize: 16,
 		fontWeight: '600',
 		color: '#1A1A1A',
 	},
-	statsRow: {
-		flexDirection: 'row',
+	helpCard: {
+		backgroundColor: '#FFFFFF',
+		borderRadius: 16,
+		padding: 20,
 		marginBottom: 16,
-		marginHorizontal: -4,
-	},
-	workoutDetails: {
+		shadowColor: '#000',
+		shadowOffset: { width: 0, height: 2 },
+		shadowOpacity: 0.05,
+		shadowRadius: 8,
+		elevation: 2,
 		flexDirection: 'row',
-		justifyContent: 'space-between',
-		marginTop: 16,
+		gap: 16,
 	},
-	workoutStat: {
-		alignItems: 'center',
-	},
-	workoutStatValue: {
-		fontSize: 20,
-		fontWeight: '700',
-		color: '#111827',
-	},
-	workoutStatLabel: {
-		fontSize: 12,
-		color: '#6B7280',
-		marginTop: 2,
-	},
-	progressStats: {
-		marginTop: 8,
-	},
-	progressText: {
-		fontSize: 14,
-		color: '#6B7280',
-		textAlign: 'center',
-	},
-	quickActions: {
-		flexDirection: 'row',
-		justifyContent: 'space-between',
-		marginTop: 16,
-	},
-	actionButton: {
-		alignItems: 'center',
+	helpContent: {
 		flex: 1,
 	},
-	actionIcon: {
-		width: 48,
-		height: 48,
+	helpTitle: {
+		fontSize: 16,
+		fontWeight: '600',
+		color: '#111827',
+		marginBottom: 8,
+	},
+	helpText: {
+		fontSize: 14,
+		color: '#6B7280',
+		lineHeight: 20,
+	},
+	statsContainer: {
+		flexDirection: 'row',
+		gap: 12,
+		marginBottom: 16,
+	},
+	statCard: {
+		flex: 1,
+		backgroundColor: '#FFFFFF',
+		padding: 16,
+		borderRadius: 12,
+		alignItems: 'center',
+		shadowColor: '#000',
+		shadowOffset: { width: 0, height: 1 },
+		shadowOpacity: 0.1,
+		shadowRadius: 2,
+		elevation: 2,
+	},
+	statNumber: {
+		fontSize: 24,
+		fontWeight: 'bold',
+		color: '#111827',
+		marginTop: 8,
+	},
+	statLabel: {
+		fontSize: 12,
+		color: '#6B7280',
+		marginTop: 4,
+	},
+	activeWorkoutButton: {
+		flexDirection: 'row',
+		backgroundColor: '#4CAF50',
+		padding: 16,
 		borderRadius: 12,
 		justifyContent: 'center',
 		alignItems: 'center',
-		marginBottom: 8,
+		gap: 8,
+		marginBottom: 16,
+		shadowColor: '#000',
+		shadowOffset: { width: 0, height: 2 },
+		shadowOpacity: 0.2,
+		shadowRadius: 4,
+		elevation: 4,
 	},
-	actionIconText: {
-		fontSize: 20,
+	activeWorkoutText: {
+		color: '#FFFFFF',
+		fontSize: 18,
+		fontWeight: 'bold',
 	},
-	actionText: {
-		fontSize: 12,
-		fontWeight: '500',
-		color: '#374151',
-		textAlign: 'center',
+	trainerCard: {
+		backgroundColor: '#FFFFFF',
+		borderRadius: 16,
+		padding: 20,
+		marginBottom: 16,
+		shadowColor: '#000',
+		shadowOffset: { width: 0, height: 2 },
+		shadowOpacity: 0.05,
+		shadowRadius: 8,
+		elevation: 2,
 	},
-	section: {
-		marginBottom: 24,
+	trainerCardHeader: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		marginBottom: 16,
+		gap: 12,
 	},
-	sectionTitle: {
+	trainerCardTitle: {
 		fontSize: 18,
 		fontWeight: '600',
 		color: '#111827',
+	},
+	trainerCardContent: {
+		gap: 12,
+	},
+	trainerCardRow: {
+		flexDirection: 'column',
+	},
+	trainerCardLabel: {
+		fontSize: 12,
+		fontWeight: '500',
+		color: '#6B7280',
+		marginBottom: 4,
+	},
+	trainerCardValue: {
+		fontSize: 15,
+		color: '#111827',
+		lineHeight: 22,
+	},
+	infoCard: {
+		backgroundColor: '#FFFFFF',
+		borderRadius: 16,
+		padding: 20,
 		marginBottom: 16,
+		shadowColor: '#000',
+		shadowOffset: { width: 0, height: 2 },
+		shadowOpacity: 0.05,
+		shadowRadius: 8,
+		elevation: 2,
+		flexDirection: 'row',
+		gap: 16,
+	},
+	infoContent: {
+		flex: 1,
+	},
+	infoTitle: {
+		fontSize: 16,
+		fontWeight: '600',
+		color: '#111827',
+		marginBottom: 8,
+	},
+	infoText: {
+		fontSize: 14,
+		color: '#6B7280',
+		lineHeight: 20,
 	},
 	bottomSpacing: {
 		height: 20,

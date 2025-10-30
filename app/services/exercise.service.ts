@@ -19,8 +19,24 @@ export class ExerciseService {
   static async searchExercises(name: string): Promise<ExerciseDbModel[]> {
     try {
       const url = `${API_ENDPOINTS.EXERCISES.SEARCH}?name=${encodeURIComponent(name)}`;
-      const response = await apiClient.get<ExerciseDbModel[]>(url);
-      return response;
+      console.log('📡 Fetching from URL:', url);
+
+      const response = await apiClient.get<{ data: ExerciseDbModel[]; total: number; limit: number; offset: number }>(url);
+
+      console.log('📦 Raw response:', response);
+      console.log('📊 Response structure:', {
+        hasData: !!response.data,
+        dataType: Array.isArray(response.data) ? 'array' : typeof response.data,
+        dataLength: Array.isArray(response.data) ? response.data.length : 'N/A',
+        total: response.total,
+      });
+
+      // Backend returns { data: [...], total: X, limit: Y, offset: Z }
+      // We need to extract the data array
+      const exercises = response.data || [];
+      console.log('✅ Extracted exercises array:', exercises.length, 'items');
+
+      return exercises;
     } catch (error) {
       console.error('Search exercises error:', error);
       throw error;
@@ -67,10 +83,18 @@ export class ExerciseService {
    */
   static async getExercisesByBodyPart(bodyPart: string): Promise<ExerciseDbModel[]> {
     try {
-      const response = await apiClient.get<ExerciseDbModel[]>(
+      const response = await apiClient.get<{ data: ExerciseDbModel[] } | ExerciseDbModel[]>(
         API_ENDPOINTS.EXERCISES.GET_BY_BODY_PART(bodyPart)
       );
-      return response;
+
+      // Handle both wrapped and unwrapped responses
+      if (Array.isArray(response)) {
+        return response;
+      } else if (response && typeof response === 'object' && 'data' in response) {
+        return (response as { data: ExerciseDbModel[] }).data || [];
+      }
+
+      return [];
     } catch (error) {
       console.error('Get exercises by body part error:', error);
       throw error;
@@ -101,10 +125,18 @@ export class ExerciseService {
    */
   static async getExercisesByTarget(target: string): Promise<ExerciseDbModel[]> {
     try {
-      const response = await apiClient.get<ExerciseDbModel[]>(
+      const response = await apiClient.get<{ data: ExerciseDbModel[] } | ExerciseDbModel[]>(
         API_ENDPOINTS.EXERCISES.GET_BY_TARGET(target)
       );
-      return response;
+
+      // Handle both wrapped and unwrapped responses
+      if (Array.isArray(response)) {
+        return response;
+      } else if (response && typeof response === 'object' && 'data' in response) {
+        return (response as { data: ExerciseDbModel[] }).data || [];
+      }
+
+      return [];
     } catch (error) {
       console.error('Get exercises by target error:', error);
       throw error;
@@ -135,10 +167,18 @@ export class ExerciseService {
    */
   static async getExercisesByEquipment(equipment: string): Promise<ExerciseDbModel[]> {
     try {
-      const response = await apiClient.get<ExerciseDbModel[]>(
+      const response = await apiClient.get<{ data: ExerciseDbModel[] } | ExerciseDbModel[]>(
         API_ENDPOINTS.EXERCISES.GET_BY_EQUIPMENT(equipment)
       );
-      return response;
+
+      // Handle both wrapped and unwrapped responses
+      if (Array.isArray(response)) {
+        return response;
+      } else if (response && typeof response === 'object' && 'data' in response) {
+        return (response as { data: ExerciseDbModel[] }).data || [];
+      }
+
+      return [];
     } catch (error) {
       console.error('Get exercises by equipment error:', error);
       throw error;
@@ -166,6 +206,8 @@ export class ExerciseService {
       });
       const url = `${API_ENDPOINTS.EXERCISES.SEARCH}?${params}`;
       const response = await apiClient.get<import('../types/api.types').ExerciseSearchResponse>(url);
+
+      // Backend already returns ExerciseSearchResponse format
       return response;
     } catch (error) {
       console.error('Search exercises with pagination error:', error);

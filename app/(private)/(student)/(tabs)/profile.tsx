@@ -1,19 +1,19 @@
-import React, { useEffect } from 'react';
-import {
-	View,
-	Text,
-	StyleSheet,
-	ScrollView,
-	SafeAreaView,
-	TouchableOpacity,
-	ActivityIndicator,
-	Platform,
-} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useAuth } from '../../../hooks/useAuth';
+import React, { useEffect } from 'react';
+import {
+	ActivityIndicator,
+	Alert,
+	Platform,
+	SafeAreaView,
+	ScrollView,
+	StyleSheet,
+	Text,
+	TouchableOpacity,
+	View,
+} from 'react-native';
 import { useStudent } from '../../../contexts/StudentContext';
-import EmptyState from '../../../components/EmptyState';
+import { useAuth } from '../../../hooks/useAuth';
 
 export default function StudentProfile() {
 	const { user, logout } = useAuth();
@@ -23,76 +23,108 @@ export default function StudentProfile() {
 		currentTrainer,
 		profile,
 		isLoading,
-		loadCurrentTrainer,
-		loadProfile,
+		loadDashboard,
 		disconnectTrainer,
 	} = useStudent();
 
 	useEffect(() => {
-		loadProfile();
-		loadCurrentTrainer();
+		// Load dashboard data which includes profile and trainer info
+		loadDashboard();
 	}, []);
 
 	const handleDisconnectTrainer = () => {
 		if (!currentTrainer) return;
 
-		const message = `Tem certeza que deseja cancelar a conexão com ${currentTrainer.name}?`;
-		const confirmed = Platform.OS === 'web'
-			? window.confirm(message)
-			: true;
-
-		if (confirmed) {
-			disconnectTrainer()
-				.then(() => {
-					if (Platform.OS === 'web') {
-						window.alert('Conexão cancelada com sucesso!');
-					}
-				})
-				.catch((err: any) => {
-					if (Platform.OS === 'web') {
-						window.alert(err.message || 'Falha ao cancelar conexão');
-					}
-				});
-		}
+		Alert.alert(
+			'Cancelar Conexão',
+			`Tem certeza que deseja cancelar a conexão com ${currentTrainer.name}?\n\nVocê perderá o acesso aos treinos atuais e precisará aceitar uma nova solicitação para continuar.`,
+			[
+				{
+					text: 'Cancelar',
+					style: 'cancel',
+				},
+				{
+					text: 'Confirmar',
+					style: 'destructive',
+					onPress: async () => {
+						try {
+							await disconnectTrainer();
+							Alert.alert(
+								'Sucesso',
+								'Conexão cancelada com sucesso! Você pode aceitar uma nova solicitação de personal trainer.',
+								[{ text: 'OK' }]
+							);
+						} catch (err: any) {
+							Alert.alert(
+								'Erro',
+								err.message || 'Falha ao cancelar conexão. Tente novamente.'
+							);
+						}
+					},
+				},
+			]
+		);
 	};
 
 	const handleLogout = async () => {
-		const confirmed = Platform.OS === 'web'
-			? window.confirm('Tem certeza que deseja sair?')
-			: true;
+		console.log('🔴 StudentProfile.handleLogout invoked');
 
-		if (confirmed) {
-			try {
-				console.log('🔴 Starting logout...');
-
-				// Navigate FIRST to avoid seeing any errors during state clearing
-				if (Platform.OS === 'web') {
-					console.log('🔄 Navigating to login...');
-					window.location.href = '/';
-					// Logout will happen in the background as page unloads
-					await logout();
-				} else {
-					// On native, navigate then logout
-					router.replace('/(auth)/sign-in');
-					setTimeout(async () => {
-						await logout();
-						console.log('✅ Logout completed');
-					}, 100);
-				}
-			} catch (error) {
-				console.error('Logout failed:', error);
-				if (Platform.OS === 'web') {
-					window.alert('Erro ao fazer logout. Tente novamente.');
-				}
+		if (Platform.OS === 'web') {
+			// Use native confirm on web to ensure dialog appears in browser and logs happen
+			const confirmed = window.confirm('Tem certeza que deseja sair da sua conta?');
+			if (!confirmed) {
+				console.log('Logout cancelled (web)');
+				return;
 			}
+
+			try {
+				console.log('🔴 Starting logout (web)...');
+				// logout() from AuthContext handles everything:
+				// - Calls backend logout API
+				// - Calls globalLogout() which clears storage and state
+				// - globalLogout() also handles navigation
+				await logout();
+				console.log('✅ Logout completed (web)');
+			} catch (error) {
+				console.error('Logout failed (web):', error);
+				window.alert('Erro ao fazer logout. Tente novamente.');
+			}
+			return;
 		}
+
+		// Native path: show alert confirmation
+		Alert.alert(
+			'Sair',
+			'Tem certeza que deseja sair da sua conta?',
+			[
+				{ text: 'Cancelar', style: 'cancel' },
+				{
+					text: 'Sair',
+					style: 'destructive',
+					onPress: async () => {
+						console.log('🔴 Starting logout (native)...');
+						try {
+							// logout() from AuthContext handles everything:
+							// - Calls backend logout API
+							// - Calls globalLogout() which clears storage and state
+							// - globalLogout() also handles navigation
+							await logout();
+							console.log('✅ Logout completed (native)');
+						} catch (error) {
+							console.error('Logout failed (native):', error);
+							Alert.alert('Erro', 'Erro ao fazer logout. Tente novamente.');
+						}
+					},
+				},
+			]
+		);
 	};
 
 	if (isLoading && !profile) {
 		return (
 			<SafeAreaView style={styles.container}>
 				<View style={styles.loadingContainer}>
-					<ActivityIndicator size="large" color="#3B82F6" />
+					<ActivityIndicator size="large" color="#BBF246" />
 					<Text style={styles.loadingText}>Carregando...</Text>
 				</View>
 			</SafeAreaView>
@@ -111,7 +143,7 @@ export default function StudentProfile() {
 				<View style={styles.card}>
 					<View style={styles.userInfo}>
 						<View style={styles.avatar}>
-							<Ionicons name="person" size={40} color="#3B82F6" />
+							<Ionicons name="person" size={40} color="#BBF246" />
 						</View>
 						<View style={styles.userDetails}>
 							<Text style={styles.userName}>{profile?.name || user?.name || 'Aluno'}</Text>
@@ -120,52 +152,46 @@ export default function StudentProfile() {
 					</View>
 				</View>
 
-				{/* Trainer Section */}
-				<View style={styles.sectionHeader}>
-					<Text style={styles.sectionTitle}>Meu Personal</Text>
-				</View>
-
-				{hasTrainer && currentTrainer ? (
-					<View style={styles.card}>
-						<View style={styles.trainerHeader}>
-							<View style={styles.trainerAvatar}>
-								<Ionicons name="person" size={32} color="#3B82F6" />
-							</View>
-							<View style={styles.trainerInfo}>
-								<Text style={styles.trainerName}>{currentTrainer.name}</Text>
-								<Text style={styles.trainerEmail}>{currentTrainer.email}</Text>
-								{currentTrainer.studentCount !== undefined && (
-									<Text style={styles.trainerStats}>
-										{currentTrainer.studentCount}{' '}
-										{currentTrainer.studentCount === 1 ? 'aluno' : 'alunos'}
-									</Text>
-								)}
-							</View>
+				{/* Trainer Section - Only show if student has a trainer */}
+				{(hasTrainer || currentTrainer) && (
+					<>
+						<View style={styles.sectionHeader}>
+							<Text style={styles.sectionTitle}>Meu Personal</Text>
 						</View>
 
-						{currentTrainer.description && (
-							<View style={styles.trainerDetail}>
-								<Text style={styles.detailLabel}>Sobre:</Text>
-								<Text style={styles.detailValue}>{currentTrainer.description}</Text>
+						<View style={styles.card}>
+							<View style={styles.trainerHeader}>
+								<View style={styles.trainerAvatar}>
+									<Ionicons name="person" size={32} color="#BBF246" />
+								</View>
+								<View style={styles.trainerInfo}>
+									<Text style={styles.trainerName}>{currentTrainer?.name || 'Carregando...'}</Text>
+									<Text style={styles.trainerEmail}>{currentTrainer?.email || ''}</Text>
+									{currentTrainer?.studentCount !== undefined && (
+										<Text style={styles.trainerStats}>
+											{currentTrainer.studentCount}{' '}
+											{currentTrainer.studentCount === 1 ? 'aluno' : 'alunos'}
+										</Text>
+									)}
+								</View>
 							</View>
-						)}
 
-						<TouchableOpacity
-							style={styles.disconnectButton}
-							onPress={handleDisconnectTrainer}
-						>
-							<Text style={styles.disconnectButtonText}>Cancelar conexão com personal</Text>
-						</TouchableOpacity>
-					</View>
-				) : (
-					<View style={styles.card}>
-						<EmptyState
-							icon="person-add-outline"
-							title="Nenhum personal conectado"
-							description="Aguarde seu personal adicionar os treinos e começe agora!"
-							iconColor="#9CA3AF"
-						/>
-					</View>
+							{currentTrainer?.description && (
+								<View style={styles.trainerDetail}>
+									<Text style={styles.detailLabel}>Sobre:</Text>
+									<Text style={styles.detailValue}>{currentTrainer.description}</Text>
+								</View>
+							)}
+
+							<TouchableOpacity
+								style={styles.disconnectButton}
+								onPress={handleDisconnectTrainer}
+							>
+								<Ionicons name="person-remove-outline" size={18} color="#EF4444" style={{ marginRight: 8 }} />
+								<Text style={styles.disconnectButtonText}>Cancelar conexão</Text>
+							</TouchableOpacity>
+						</View>
+					</>
 				)}
 
 				{/* Quick Actions */}
@@ -174,7 +200,13 @@ export default function StudentProfile() {
 				</View>
 
 				<View style={styles.card}>
-					<TouchableOpacity style={styles.actionItem} onPress={handleLogout}>
+					<TouchableOpacity
+						style={styles.actionItem}
+						onPress={() => {
+							console.log('👆 Logout button pressed (student)');
+							handleLogout();
+						}}
+					>
 						<View style={styles.actionLeft}>
 							<View style={[styles.actionIcon, styles.actionIconDanger]}>
 								<Ionicons name="log-out-outline" size={20} color="#EF4444" />
@@ -238,7 +270,7 @@ const styles = StyleSheet.create({
 		width: 64,
 		height: 64,
 		borderRadius: 32,
-		backgroundColor: '#EFF6FF',
+		backgroundColor: '#F0F9F0',
 		justifyContent: 'center',
 		alignItems: 'center',
 		marginRight: 16,
@@ -274,7 +306,7 @@ const styles = StyleSheet.create({
 		width: 56,
 		height: 56,
 		borderRadius: 28,
-		backgroundColor: '#EFF6FF',
+		backgroundColor: '#F0F9F0',
 		justifyContent: 'center',
 		alignItems: 'center',
 		marginRight: 12,
@@ -317,7 +349,10 @@ const styles = StyleSheet.create({
 		borderRadius: 8,
 		borderWidth: 1,
 		borderColor: '#EF4444',
+		backgroundColor: '#FEF2F2',
 		alignItems: 'center',
+		flexDirection: 'row',
+		justifyContent: 'center',
 	},
 	disconnectButtonText: {
 		fontSize: 14,

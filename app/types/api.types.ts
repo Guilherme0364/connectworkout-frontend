@@ -148,6 +148,24 @@ export interface UpdateStudentProfileDto {
   photoUrl?: string;
 }
 
+export interface InstructorSummary {
+  id: number;
+  name: string;
+  email: string;
+  description: string;
+  studentCount: number;
+}
+
+export interface StudentDashboardDto {
+  studentName: string;
+  hasTrainer: boolean;
+  currentTrainer: InstructorSummary | null;
+  workoutCount: number;
+  exerciseCount: number;
+  activeWorkoutId: number | null;
+  pendingRequestsCount: number;
+}
+
 // ============================================================================
 // Exercise DTOs
 // ============================================================================

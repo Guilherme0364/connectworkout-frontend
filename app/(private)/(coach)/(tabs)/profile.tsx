@@ -1,19 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import {
-	View,
-	Text,
-	StyleSheet,
-	ScrollView,
-	SafeAreaView,
-	TouchableOpacity,
-	Platform,
-	ActivityIndicator,
-} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useAuth } from '../../../hooks/useAuth';
-import { useAuthContext } from '../../../contexts/AuthContext';
+import React, { useEffect, useState } from 'react';
+import {
+	ActivityIndicator,
+	Alert,
+	Platform,
+	SafeAreaView,
+	ScrollView,
+	StyleSheet,
+	Text,
+	TouchableOpacity,
+	View,
+} from 'react-native';
 import StatCard from '../../../components/dashboard/StatCard';
+import { useAuthContext } from '../../../contexts/AuthContext';
+import { useAuth } from '../../../hooks/useAuth';
 import { InstructorService, WorkoutService } from '../../../services';
 
 export default function CoachProfile() {
@@ -23,6 +24,7 @@ export default function CoachProfile() {
 	const [studentsCount, setStudentsCount] = useState(0);
 	const [totalWorkouts, setTotalWorkouts] = useState(0);
 	const [loadingStats, setLoadingStats] = useState(true);
+	const [loggingOut, setLoggingOut] = useState(false);
 
 	// Load statistics on mount, but only if authenticated
 	useEffect(() => {
@@ -66,35 +68,38 @@ export default function CoachProfile() {
 	};
 
 	const handleLogout = async () => {
+		// Prevent multiple logout attempts
+		if (loggingOut) {
+			console.log('⚠️ Logout already in progress...');
+			return;
+		}
+
 		const confirmed = Platform.OS === 'web'
 			? window.confirm('Tem certeza que deseja sair?')
 			: true;
 
-		if (confirmed) {
-			try {
-				console.log('🔴 Starting logout...');
+		if (!confirmed) return;
 
-				// Navigate FIRST to avoid seeing any errors during state clearing
-				if (Platform.OS === 'web') {
-					console.log('🔄 Navigating to login...');
-					window.location.href = '/';
-					// Logout will happen in the background as page unloads
-					await logout();
-				} else {
-					// On native, navigate then logout
-					router.replace('/(auth)/sign-in');
-					setTimeout(async () => {
-						await logout();
-						console.log('✅ Logout completed');
-					}, 100);
-				}
-			} catch (error) {
-				console.error('Logout failed:', error);
-				if (Platform.OS === 'web') {
-					window.alert('Erro ao fazer logout. Tente novamente.');
-				}
+		try {
+			console.log('🔴 Starting logout...');
+			setLoggingOut(true);
+
+			// logout() from AuthContext handles everything:
+			// - Calls backend logout API
+			// - Calls globalLogout() which clears storage and state
+			// - globalLogout() also handles navigation
+			await logout();
+			console.log('✅ Logout completed');
+		} catch (error) {
+			console.error('Logout failed:', error);
+			setLoggingOut(false);
+			if (Platform.OS === 'web') {
+				window.alert('Erro ao fazer logout. Tente novamente.');
+			} else {
+				Alert.alert('Erro', 'Erro ao fazer logout. Tente novamente.');
 			}
 		}
+		// Note: We don't reset loggingOut in finally because the component will unmount after navigation
 	};
 
 	return (
@@ -157,14 +162,31 @@ export default function CoachProfile() {
 				</View>
 
 				<View style={styles.card}>
-					<TouchableOpacity style={styles.actionItem} onPress={handleLogout}>
+					<TouchableOpacity
+						style={styles.actionItem}
+						onPress={() => {
+							console.log('👆 Logout button pressed (profile)');
+							handleLogout();
+						}}
+						disabled={loggingOut}
+					>
 						<View style={styles.actionLeft}>
 							<View style={[styles.actionIcon, styles.actionIconDanger]}>
-								<Ionicons name="log-out-outline" size={20} color="#EF4444" />
+								{loggingOut ? (
+									<ActivityIndicator size="small" color="#EF4444" />
+								) : (
+									<Ionicons name="log-out-outline" size={20} color="#EF4444" />
+								)}
 							</View>
-							<Text style={[styles.actionText, styles.actionTextDanger]}>Sair</Text>
+							<Text style={[styles.actionText, styles.actionTextDanger]}>
+								{loggingOut ? 'Saindo...' : 'Sair'}
+							</Text>
 						</View>
-						<Ionicons name="chevron-forward" size={20} color="#EF4444" />
+						{loggingOut ? (
+							<ActivityIndicator size="small" color="#EF4444" />
+						) : (
+							<Ionicons name="chevron-forward" size={20} color="#EF4444" />
+						)}
 					</TouchableOpacity>
 				</View>
 

@@ -4,16 +4,12 @@
  * Reusable card for displaying exercise information with GIF preview
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { Exercise } from '../types/api.types';
-import {
-  translateBodyPart,
-  translateEquipment,
-  capitalizeFirst,
-} from '../utils/exerciseTranslations';
 import { Theme } from '../styles/theme';
+import { ExerciseImageService, RESOLUTION } from '../services/exerciseImage.service';
 
 interface ExerciseCardProps {
   exercise: Exercise;
@@ -30,6 +26,11 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
   draggable,
   onPress,
 }) => {
+  const [imageError, setImageError] = useState(false);
+  const [imageLoading, setImageLoading] = useState(true);
+
+  const hasValidGifUrl = exercise.gifUrl && exercise.gifUrl.trim().length > 0;
+
   return (
     <Pressable style={styles.card} onPress={onPress} disabled={!onPress}>
       <View style={styles.content}>
@@ -39,11 +40,24 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
           </View>
         )}
 
-        <Image
-          source={{ uri: exercise.gifUrl }}
-          style={styles.gif}
-          resizeMode="cover"
-        />
+        {hasValidGifUrl && !imageError ? (
+          <Image
+            source={ExerciseImageService.getImageProps(exercise.exerciseDbId, RESOLUTION.INSTRUCTOR)}
+            style={styles.gif}
+            resizeMode="cover"
+            onError={(error) => {
+              console.error('Failed to load exercise GIF:', exercise.gifUrl, error.nativeEvent);
+              setImageError(true);
+              setImageLoading(false);
+            }}
+            onLoadStart={() => setImageLoading(true)}
+            onLoadEnd={() => setImageLoading(false)}
+          />
+        ) : (
+          <View style={[styles.gif, styles.gifPlaceholder]}>
+            <Ionicons name="fitness" size={32} color={Theme.colors.textTertiary} />
+          </View>
+        )}
 
         <View style={styles.info}>
           <Text style={styles.name} numberOfLines={2}>
@@ -85,12 +99,12 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
           <View style={styles.tags}>
             <View style={styles.tag}>
               <Text style={styles.tagText}>
-                {capitalizeFirst(translateBodyPart(exercise.bodyPart))}
+                {exercise.bodyPart}
               </Text>
             </View>
             <View style={styles.tag}>
               <Text style={styles.tagText}>
-                {capitalizeFirst(translateEquipment(exercise.equipment))}
+                {exercise.equipment}
               </Text>
             </View>
           </View>
@@ -154,6 +168,11 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 8,
+    backgroundColor: Theme.colors.gray100,
+  },
+  gifPlaceholder: {
+    justifyContent: 'center',
+    alignItems: 'center',
     backgroundColor: Theme.colors.gray100,
   },
   info: {

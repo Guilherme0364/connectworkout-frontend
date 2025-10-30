@@ -63,6 +63,9 @@ export const API_CONFIG = {
   HEADERS: {
     'Content-Type': 'application/json',
   },
+  // RapidAPI credentials for ExerciseDB image loading
+  RAPID_API_KEY: 'YOUR_RAPIDAPI_KEY_HERE', // ⚠️ REPLACE WITH YOUR ACTUAL KEY
+  RAPID_API_HOST: 'exercisedb.p.rapidapi.com',
 } as const;
 
 export const API_ENDPOINTS = {
@@ -92,6 +95,7 @@ export const API_ENDPOINTS = {
   STUDENTS: {
     GET_PROFILE: '/api/students/profile',
     UPDATE_PROFILE: '/api/students/profile',
+    GET_DASHBOARD: '/api/students/dashboard',
     GET_TRAINER_REQUESTS: '/api/students/trainer-requests',
     GET_TRAINER_DETAILS: (trainerId: number) => `/api/students/trainers/${trainerId}`,
     GET_CURRENT_TRAINER: '/api/students/current-trainer',

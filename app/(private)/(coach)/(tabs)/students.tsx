@@ -73,6 +73,46 @@ export default function Students() {
 		fetchStudents(true);
 	};
 
+	const handleRemoveStudent = (studentId: number, studentName: string) => {
+		Alert.alert(
+			'Remover Aluno',
+			`Tem certeza que deseja remover ${studentName}?\n\nEsta ação não pode ser desfeita. O aluno perderá acesso aos treinos e será desconectado.`,
+			[
+				{
+					text: 'Cancelar',
+					style: 'cancel',
+				},
+				{
+					text: 'Remover',
+					style: 'destructive',
+					onPress: async () => {
+						try {
+							setLoading(true);
+							await InstructorService.removeStudent(studentId);
+
+							Alert.alert(
+								'Sucesso',
+								`${studentName} foi removido com sucesso.`,
+								[{ text: 'OK' }]
+							);
+
+							// Refresh the students list
+							await fetchStudents();
+						} catch (error: any) {
+							console.error('Remove student error:', error);
+							Alert.alert(
+								'Erro',
+								error?.message || 'Não foi possível remover o aluno. Tente novamente.'
+							);
+						} finally {
+							setLoading(false);
+						}
+					},
+				},
+			]
+		);
+	};
+
 	const mockStudents = [
 		{
 			id: 1,
@@ -325,6 +365,15 @@ export default function Students() {
 										</View>
 										<View style={styles.studentCardActions}>
 											<Pressable
+												style={styles.removeStudentButton}
+												onPress={(e) => {
+													e.stopPropagation();
+													handleRemoveStudent(student.id, student.name);
+												}}
+											>
+												<Ionicons name="trash-outline" size={18} color="#EF4444" />
+											</Pressable>
+											<Pressable
 												style={styles.manageWorkoutsButton}
 												onPress={(e) => {
 													e.stopPropagation();
@@ -537,10 +586,16 @@ const styles = StyleSheet.create({
 		alignItems: 'center',
 		gap: 8,
 	},
+	removeStudentButton: {
+		padding: 8,
+		borderRadius: 8,
+		backgroundColor: '#FEF2F2',
+		marginRight: 8,
+	},
 	manageWorkoutsButton: {
 		padding: 8,
 		borderRadius: 8,
-		backgroundColor: '#EFF6FF',
+		backgroundColor: '#F0F9F0',
 	},
 	statusBadge: {
 		paddingHorizontal: 8,

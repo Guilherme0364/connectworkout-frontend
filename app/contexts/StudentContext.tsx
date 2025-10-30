@@ -12,6 +12,7 @@ import {
   TrainerRequestDto,
   TrainerDto,
   UpdateStudentProfileDto,
+  StudentDashboardDto,
 } from '../types/api.types';
 
 // ============================================================================
@@ -22,6 +23,7 @@ export interface StudentState {
   profile: StudentProfileDto | null;
   currentTrainer: TrainerDto | null;
   trainerRequests: TrainerRequestDto[];
+  dashboardData: StudentDashboardDto | null;
   hasTrainer: boolean;
   isLoading: boolean;
   error: string | null;
@@ -32,6 +34,7 @@ export interface StudentContextType extends StudentState {
   updateProfile: (data: UpdateStudentProfileDto) => Promise<void>;
   loadTrainerRequests: () => Promise<void>;
   loadCurrentTrainer: () => Promise<void>;
+  loadDashboard: () => Promise<void>;
   acceptTrainer: (trainerId: number) => Promise<void>;
   rejectTrainer: (trainerId: number) => Promise<void>;
   disconnectTrainer: () => Promise<void>;
@@ -44,6 +47,7 @@ type StudentAction =
   | { type: 'SET_PROFILE'; payload: StudentProfileDto }
   | { type: 'SET_CURRENT_TRAINER'; payload: TrainerDto | null }
   | { type: 'SET_TRAINER_REQUESTS'; payload: TrainerRequestDto[] }
+  | { type: 'SET_DASHBOARD_DATA'; payload: StudentDashboardDto }
   | { type: 'CLEAR_DATA' };
 
 // ============================================================================
@@ -54,6 +58,7 @@ const initialState: StudentState = {
   profile: null,
   currentTrainer: null,
   trainerRequests: [],
+  dashboardData: null,
   hasTrainer: false,
   isLoading: true,
   error: null,
@@ -92,6 +97,15 @@ function studentReducer(state: StudentState, action: StudentAction): StudentStat
         ...state,
         trainerRequests: action.payload,
         isLoading: false,
+      };
+    case 'SET_DASHBOARD_DATA':
+      return {
+        ...state,
+        dashboardData: action.payload,
+        hasTrainer: action.payload.hasTrainer,
+        currentTrainer: action.payload.currentTrainer,
+        isLoading: false,
+        error: null,
       };
     case 'CLEAR_DATA':
       return initialState;
@@ -162,6 +176,17 @@ export function StudentProvider({ children }: StudentProviderProps) {
     }
   }, []);
 
+  const loadDashboard = useCallback(async () => {
+    try {
+      dispatch({ type: 'SET_LOADING', payload: true });
+      const dashboardData = await StudentService.getDashboard();
+      dispatch({ type: 'SET_DASHBOARD_DATA', payload: dashboardData });
+    } catch (error: any) {
+      console.error('Failed to load dashboard:', error);
+      dispatch({ type: 'SET_ERROR', payload: error.message || 'Failed to load dashboard' });
+    }
+  }, []);
+
   const acceptTrainer = useCallback(async (trainerId: number) => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
@@ -215,11 +240,10 @@ export function StudentProvider({ children }: StudentProviderProps) {
   const refreshStudentData = useCallback(async () => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
-      await Promise.all([
-        loadProfile(),
-        loadCurrentTrainer(),
-        loadTrainerRequests(),
-      ]);
+      // Use the new dashboard endpoint which consolidates the data
+      await loadDashboard();
+      // Also load trainer requests separately as they're not in dashboard
+      await loadTrainerRequests();
     } catch (error: any) {
       console.error('Failed to refresh student data:', error);
       dispatch({ type: 'SET_ERROR', payload: error.message || 'Failed to refresh data' });
@@ -238,6 +262,7 @@ export function StudentProvider({ children }: StudentProviderProps) {
       updateProfile,
       loadTrainerRequests,
       loadCurrentTrainer,
+      loadDashboard,
       acceptTrainer,
       rejectTrainer,
       disconnectTrainer,
@@ -249,6 +274,7 @@ export function StudentProvider({ children }: StudentProviderProps) {
       updateProfile,
       loadTrainerRequests,
       loadCurrentTrainer,
+      loadDashboard,
       acceptTrainer,
       rejectTrainer,
       disconnectTrainer,
@@ -276,6 +302,7 @@ export function useStudent(): StudentContextType {
       profile: null,
       currentTrainer: null,
       trainerRequests: [],
+      dashboardData: null,
       hasTrainer: false,
       isLoading: false,
       error: null,
@@ -283,6 +310,7 @@ export function useStudent(): StudentContextType {
       updateProfile: async () => {},
       loadTrainerRequests: async () => {},
       loadCurrentTrainer: async () => {},
+      loadDashboard: async () => {},
       acceptTrainer: async () => {},
       rejectTrainer: async () => {},
       disconnectTrainer: async () => {},

@@ -8,6 +8,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform, Alert } from 'react-native';
 import { API_CONFIG } from '../config/api.config';
 import { ApiError } from '../types/api.types';
+import { globalLogout } from '../utils/globalLogout';
 
 // Storage keys
 const STORAGE_KEYS = {
@@ -36,9 +37,13 @@ async function request<T = any>(
 ): Promise<T> {
   const url = `${API_CONFIG.BASE_URL}${endpoint}`;
 
+  // Parse body for logging if present
+  const requestBody = options.body ? JSON.parse(options.body as string) : null;
+
   console.log('🚀 Making request:', {
     method: options.method || 'GET',
     url: url,
+    body: requestBody,
   });
 
   try {
@@ -84,9 +89,11 @@ async function request<T = any>(
       if (response.status === 401) {
         console.warn('🚫 401 Unauthorized - Session expired');
 
-        // Clear tokens from storage
-        // The AuthContext will detect this change and redirect to login
-        await clearTokens();
+        // Call global logout to clear everything and redirect
+        // This happens directly without going through React state
+        globalLogout('401 Session Expired').catch((err) => {
+          console.error('Error during 401 logout:', err);
+        });
 
         // Throw error to stop execution of the current request
         const error: ApiError = {
@@ -103,7 +110,14 @@ async function request<T = any>(
         errors: data?.errors,
       };
 
-      console.error('❌ Request failed:', error);
+      console.error('❌ Request failed:', {
+        status: error.status,
+        message: error.message,
+        errors: error.errors,
+        requestUrl: url,
+        requestMethod: options.method || 'GET',
+        requestBody: requestBody,
+      });
       throw error;
     }
 

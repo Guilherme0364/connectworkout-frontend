@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useReducer, useEffect, useCallback, useMemo, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { AuthService, setAuthToken, setRefreshToken, clearTokens } from '../services';
+import React, { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useReducer } from 'react';
+import { AuthService, clearTokens } from '../services';
 import { LoginDto, RegisterUserDto, UserDto, UserType } from '../types/api.types';
+import { globalLogout, setAuthDispatch } from '../utils/globalLogout';
 
 export type UserRole = 'student' | 'instructor';
 
@@ -203,14 +204,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   const logout = async () => {
+    console.log('🔴 AuthContext.logout invoked');
+
+    // Try to call backend logout (optional)
     try {
       await AuthService.logout();
-      await removeCredentials();
-      dispatch({ type: 'CLEAR_CREDENTIALS' });
-    } catch (error) {
-      console.error('Logout failed:', error);
-      throw error;
+    } catch (apiError) {
+      console.warn('AuthService.logout failed (continuing with local cleanup):', apiError);
     }
+
+    // Use global logout to clear everything and navigate
+    // globalLogout already dispatches CLEAR_CREDENTIALS, so we don't need to do it again
+    await globalLogout('Manual Logout');
   };
 
   const setCredentials = async (token: string, role: UserRole, user: UserDto) => {
@@ -267,24 +272,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only run once on mount
 
-  // Monitor token changes to handle 401 logout
+  // Register dispatch with globalLogout
+  // This allows globalLogout to clear React state when 401 occurs
   useEffect(() => {
-    // Poll storage to detect when tokens are cleared by API client
-    const checkTokenInterval = setInterval(async () => {
-      // Only check if currently authenticated
-      if (state.isAuthenticated && !state.isLoading) {
-        const credentials = await getStoredCredentials(); 
+    console.log('📌 Registering AuthContext dispatch with globalLogout');
+    setAuthDispatch(dispatch);
 
-        // If we're authenticated but tokens are gone, clear auth state
-        if (!credentials) {
-          console.log('🔒 Tokens cleared - logging out');
-          dispatch({ type: 'CLEAR_CREDENTIALS' });
-        }
-      }
-    }, 1000); // Check every second
+    // Cleanup: unregister on unmount
+    return () => {
+      console.log('📌 Unregistering AuthContext dispatch');
+      setAuthDispatch(null);
+    };
+  }, [dispatch]);
 
-    return () => clearInterval(checkTokenInterval);
-  }, [state.isAuthenticated, state.isLoading]);
+  // NOTE: Polling mechanism removed to prevent infinite loops
+  // 401 errors are now handled directly in api.client.ts via globalLogout()
 
   const contextValue: AuthContextType = useMemo(
     () => ({

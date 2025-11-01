@@ -45,6 +45,12 @@ export interface AuthResultDto {
   user: UserDto;
 }
 
+export interface SocialLinks {
+  instagram?: string | null;
+  facebook?: string | null;
+  website?: string | null;
+}
+
 export interface UserDto {
   id: number;
   name: string;
@@ -53,6 +59,15 @@ export interface UserDto {
   gender?: Gender;
   userType: UserType;
   description: string;
+  // Enhanced profile fields (Phase 1)
+  phone?: string | null;
+  certifications?: string | null;
+  specializations?: string | null;
+  bio?: string | null;
+  yearsOfExperience?: number | null;
+  socialLinks?: SocialLinks | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface UpdateUserDto {
@@ -62,6 +77,13 @@ export interface UpdateUserDto {
   description?: string;
   currentPassword?: string;
   newPassword?: string;
+  // Enhanced profile fields (Phase 1)
+  phone?: string;
+  certifications?: string;
+  specializations?: string;
+  bio?: string;
+  yearsOfExperience?: number;
+  socialLinks?: SocialLinks;
 }
 
 // ============================================================================
@@ -82,6 +104,40 @@ export interface StudentSummaryDto {
   activeWorkoutName: string;
   completedExercisesToday: number;
   totalExercisesToday: number;
+  enrolledAt: string; // ISO 8601 date string (Phase 1)
+}
+
+export interface StatisticTrend {
+  value: number;
+  isPositive: boolean;
+}
+
+export interface InstructorStatistics {
+  // Workout Statistics
+  workoutsCreatedThisMonth: number;
+  workoutsCreatedThisWeek: number;
+  workoutsCreatedTotal: number;
+
+  // Student Statistics
+  totalStudents: number;
+  activeStudents: number;
+  newStudentsThisWeek: number;
+  newStudentsThisMonth: number;
+
+  // Completion Statistics (percentages)
+  averageCompletionRate: number;
+  completionRateToday: number;
+  completionRateThisWeek: number;
+  completionRateThisMonth: number;
+
+  // Engagement Statistics
+  totalWorkoutsCompletedThisMonth: number;
+  totalExercisesCompletedThisMonth: number;
+
+  // Trends (comparison with previous period)
+  studentsTrend: StatisticTrend;
+  completionRateTrend: StatisticTrend;
+  workoutsCreatedTrend: StatisticTrend;
 }
 
 // ============================================================================

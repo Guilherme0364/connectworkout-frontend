@@ -11,6 +11,7 @@ import {
   StudentSummaryDto,
   ConnectStudentDto,
   UserDto,
+  InstructorStatistics,
 } from '../types/api.types';
 
 export class InstructorService {
@@ -76,6 +77,23 @@ export class InstructorService {
       return response;
     } catch (error) {
       console.error('Remove student error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get comprehensive statistics for the instructor's dashboard
+   * Requires authentication and Instructor role
+   * @returns Dashboard statistics including students, workouts, completion rates, and trends
+   */
+  static async getStatistics(): Promise<InstructorStatistics> {
+    try {
+      const response = await apiClient.get<InstructorStatistics>(
+        API_ENDPOINTS.INSTRUCTORS.GET_STATISTICS
+      );
+      return response;
+    } catch (error) {
+      console.error('Get statistics error:', error);
       throw error;
     }
   }

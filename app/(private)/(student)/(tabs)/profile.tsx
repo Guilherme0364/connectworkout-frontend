@@ -1,396 +1,548 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useEffect } from 'react';
+import React, { useState } from 'react';
 import {
-	ActivityIndicator,
-	Alert,
-	Platform,
-	SafeAreaView,
-	ScrollView,
-	StyleSheet,
-	Text,
-	TouchableOpacity,
-	View,
+  ActivityIndicator,
+  Alert,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  TextInput,
 } from 'react-native';
+import { Theme } from '../../../styles/theme';
 import { useStudent } from '../../../contexts/StudentContext';
 import { useAuth } from '../../../hooks/useAuth';
+import { UserService } from '../../../services';
 
 export default function StudentProfile() {
-	const { user, logout } = useAuth();
-	const router = useRouter();
-	const {
-		hasTrainer,
-		currentTrainer,
-		profile,
-		isLoading,
-		loadDashboard,
-		disconnectTrainer,
-	} = useStudent();
+  const { user, logout } = useAuth();
+  const router = useRouter();
+  const { hasTrainer, currentTrainer, disconnectTrainer } = useStudent();
 
-	useEffect(() => {
-		// Load dashboard data which includes profile and trainer info
-		loadDashboard();
-	}, []);
+  const [loggingOut, setLoggingOut] = useState(false);
+  const [showPasswordChange, setShowPasswordChange] = useState(false);
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+  const [saving, setSaving] = useState(false);
 
-	const handleDisconnectTrainer = () => {
-		if (!currentTrainer) return;
+  const handleChangePassword = async () => {
+    if (!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword) {
+      Alert.alert('Erro', 'Preencha todos os campos de senha');
+      return;
+    }
 
-		Alert.alert(
-			'Cancelar Conexão',
-			`Tem certeza que deseja cancelar a conexão com ${currentTrainer.name}?\n\nVocê perderá o acesso aos treinos atuais e precisará aceitar uma nova solicitação para continuar.`,
-			[
-				{
-					text: 'Cancelar',
-					style: 'cancel',
-				},
-				{
-					text: 'Confirmar',
-					style: 'destructive',
-					onPress: async () => {
-						try {
-							await disconnectTrainer();
-							Alert.alert(
-								'Sucesso',
-								'Conexão cancelada com sucesso! Você pode aceitar uma nova solicitação de personal trainer.',
-								[{ text: 'OK' }]
-							);
-						} catch (err: any) {
-							Alert.alert(
-								'Erro',
-								err.message || 'Falha ao cancelar conexão. Tente novamente.'
-							);
-						}
-					},
-				},
-			]
-		);
-	};
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      Alert.alert('Erro', 'As senhas novas não coincidem');
+      return;
+    }
 
-	const handleLogout = async () => {
-		console.log('🔴 StudentProfile.handleLogout invoked');
+    if (passwordData.newPassword.length < 6) {
+      Alert.alert('Erro', 'A senha nova deve ter pelo menos 6 caracteres');
+      return;
+    }
 
-		if (Platform.OS === 'web') {
-			// Use native confirm on web to ensure dialog appears in browser and logs happen
-			const confirmed = window.confirm('Tem certeza que deseja sair da sua conta?');
-			if (!confirmed) {
-				console.log('Logout cancelled (web)');
-				return;
-			}
+    try {
+      setSaving(true);
+      await UserService.updateProfile({
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword,
+      });
 
-			try {
-				console.log('🔴 Starting logout (web)...');
-				// logout() from AuthContext handles everything:
-				// - Calls backend logout API
-				// - Calls globalLogout() which clears storage and state
-				// - globalLogout() also handles navigation
-				await logout();
-				console.log('✅ Logout completed (web)');
-			} catch (error) {
-				console.error('Logout failed (web):', error);
-				window.alert('Erro ao fazer logout. Tente novamente.');
-			}
-			return;
-		}
+      Alert.alert('Sucesso', 'Senha alterada com sucesso!');
+      setShowPasswordChange(false);
+      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    } catch (error: any) {
+      console.error('Failed to change password:', error);
+      Alert.alert('Erro', error.message || 'Falha ao alterar senha. Verifique sua senha atual.');
+    } finally {
+      setSaving(false);
+    }
+  };
 
-		// Native path: show alert confirmation
-		Alert.alert(
-			'Sair',
-			'Tem certeza que deseja sair da sua conta?',
-			[
-				{ text: 'Cancelar', style: 'cancel' },
-				{
-					text: 'Sair',
-					style: 'destructive',
-					onPress: async () => {
-						console.log('🔴 Starting logout (native)...');
-						try {
-							// logout() from AuthContext handles everything:
-							// - Calls backend logout API
-							// - Calls globalLogout() which clears storage and state
-							// - globalLogout() also handles navigation
-							await logout();
-							console.log('✅ Logout completed (native)');
-						} catch (error) {
-							console.error('Logout failed (native):', error);
-							Alert.alert('Erro', 'Erro ao fazer logout. Tente novamente.');
-						}
-					},
-				},
-			]
-		);
-	};
+  const handleLogout = async () => {
+    if (loggingOut) return;
 
-	if (isLoading && !profile) {
-		return (
-			<SafeAreaView style={styles.container}>
-				<View style={styles.loadingContainer}>
-					<ActivityIndicator size="large" color="#BBF246" />
-					<Text style={styles.loadingText}>Carregando...</Text>
-				</View>
-			</SafeAreaView>
-		);
-	}
+    const confirmed = Platform.OS === 'web'
+      ? window.confirm('Tem certeza que deseja sair?')
+      : await new Promise((resolve) => {
+          Alert.alert(
+            'Sair',
+            'Tem certeza que deseja sair?',
+            [
+              { text: 'Cancelar', style: 'cancel', onPress: () => resolve(false) },
+              { text: 'Sair', style: 'destructive', onPress: () => resolve(true) },
+            ]
+          );
+        });
 
-	return (
-		<SafeAreaView style={styles.container}>
-			<ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-				{/* Header */}
-				<View style={styles.header}>
-					<Text style={styles.title}>Meu Perfil</Text>
-				</View>
+    if (!confirmed) return;
 
-				{/* User Info Card */}
-				<View style={styles.card}>
-					<View style={styles.userInfo}>
-						<View style={styles.avatar}>
-							<Ionicons name="person" size={40} color="#BBF246" />
-						</View>
-						<View style={styles.userDetails}>
-							<Text style={styles.userName}>{profile?.name || user?.name || 'Aluno'}</Text>
-							<Text style={styles.userEmail}>{profile?.email || user?.email || ''}</Text>
-						</View>
-					</View>
-				</View>
+    try {
+      setLoggingOut(true);
+      await logout();
+    } catch (error) {
+      console.error('Logout failed:', error);
+      setLoggingOut(false);
+      Alert.alert('Erro', 'Falha ao sair. Tente novamente.');
+    }
+  };
 
-				{/* Trainer Section - Only show if student has a trainer */}
-				{(hasTrainer || currentTrainer) && (
-					<>
-						<View style={styles.sectionHeader}>
-							<Text style={styles.sectionTitle}>Meu Personal</Text>
-						</View>
+  const handleDisconnectTrainer = () => {
+    if (!currentTrainer) return;
 
-						<View style={styles.card}>
-							<View style={styles.trainerHeader}>
-								<View style={styles.trainerAvatar}>
-									<Ionicons name="person" size={32} color="#BBF246" />
-								</View>
-								<View style={styles.trainerInfo}>
-									<Text style={styles.trainerName}>{currentTrainer?.name || 'Carregando...'}</Text>
-									<Text style={styles.trainerEmail}>{currentTrainer?.email || ''}</Text>
-									{currentTrainer?.studentCount !== undefined && (
-										<Text style={styles.trainerStats}>
-											{currentTrainer.studentCount}{' '}
-											{currentTrainer.studentCount === 1 ? 'aluno' : 'alunos'}
-										</Text>
-									)}
-								</View>
-							</View>
+    Alert.alert(
+      'Cancelar Conexão',
+      `Tem certeza que deseja cancelar a conexão com ${currentTrainer.name}?\n\nVocê perderá o acesso aos treinos atuais.`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Confirmar',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await disconnectTrainer();
+              Alert.alert('Sucesso', 'Conexão cancelada com sucesso!');
+            } catch (err: any) {
+              Alert.alert('Erro', err.message || 'Falha ao cancelar conexão.');
+            }
+          },
+        },
+      ]
+    );
+  };
 
-							{currentTrainer?.description && (
-								<View style={styles.trainerDetail}>
-									<Text style={styles.detailLabel}>Sobre:</Text>
-									<Text style={styles.detailValue}>{currentTrainer.description}</Text>
-								</View>
-							)}
+  return (
+    <SafeAreaView style={styles.container}>
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.title}>Meu Perfil</Text>
+        </View>
 
-							<TouchableOpacity
-								style={styles.disconnectButton}
-								onPress={handleDisconnectTrainer}
-							>
-								<Ionicons name="person-remove-outline" size={18} color="#EF4444" style={{ marginRight: 8 }} />
-								<Text style={styles.disconnectButtonText}>Cancelar conexão</Text>
-							</TouchableOpacity>
-						</View>
-					</>
-				)}
+        {/* Profile Header Card */}
+        <View style={styles.card}>
+          <View style={styles.avatarSection}>
+            <View style={styles.avatar}>
+              <Ionicons name="person" size={48} color={Theme.colors.primary} />
+            </View>
+          </View>
+          <Text style={styles.userName}>{user?.name || 'Aluno'}</Text>
+          <Text style={styles.userRole}>Aluno</Text>
+        </View>
 
-				{/* Quick Actions */}
-				<View style={styles.sectionHeader}>
-					<Text style={styles.sectionTitle}>Ações</Text>
-				</View>
+        {/* Profile Summary Card */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardTitle}>Meu Perfil</Text>
+          </View>
 
-				<View style={styles.card}>
-					<TouchableOpacity
-						style={styles.actionItem}
-						onPress={() => {
-							console.log('👆 Logout button pressed (student)');
-							handleLogout();
-						}}
-					>
-						<View style={styles.actionLeft}>
-							<View style={[styles.actionIcon, styles.actionIconDanger]}>
-								<Ionicons name="log-out-outline" size={20} color="#EF4444" />
-							</View>
-							<Text style={[styles.actionText, styles.actionTextDanger]}>Sair</Text>
-						</View>
-						<Ionicons name="chevron-forward" size={20} color="#EF4444" />
-					</TouchableOpacity>
-				</View>
+          <View style={styles.infoRow}>
+            <Ionicons name="mail-outline" size={20} color={Theme.colors.textSecondary} />
+            <View style={styles.infoContent}>
+              <Text style={styles.infoLabel}>Email</Text>
+              <Text style={styles.infoValue}>{user?.email || 'N/A'}</Text>
+            </View>
+          </View>
 
-				<View style={styles.bottomSpacing} />
-			</ScrollView>
-		</SafeAreaView>
-	);
+          {user?.phone && (
+            <View style={styles.infoRow}>
+              <Ionicons name="call-outline" size={20} color={Theme.colors.textSecondary} />
+              <View style={styles.infoContent}>
+                <Text style={styles.infoLabel}>Telefone</Text>
+                <Text style={styles.infoValue}>{user.phone}</Text>
+              </View>
+            </View>
+          )}
+
+          <TouchableOpacity
+            style={styles.viewProfileButton}
+            onPress={() => router.push('/(private)/(student)/detailed-profile')}
+          >
+            <Text style={styles.viewProfileButtonText}>Ver Perfil Completo</Text>
+            <Ionicons name="arrow-forward" size={18} color={Theme.colors.primary} />
+          </TouchableOpacity>
+        </View>
+
+        {/* Trainer Card */}
+        {hasTrainer && currentTrainer && (
+          <>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Meu Personal</Text>
+            </View>
+
+            <View style={styles.card}>
+              <View style={styles.trainerHeader}>
+                <View style={styles.trainerAvatar}>
+                  <Ionicons name="person" size={32} color={Theme.colors.primary} />
+                </View>
+                <View style={styles.trainerInfo}>
+                  <Text style={styles.trainerName}>{currentTrainer.name}</Text>
+                  <Text style={styles.trainerEmail}>{currentTrainer.email}</Text>
+                </View>
+              </View>
+
+              <TouchableOpacity
+                style={styles.disconnectButton}
+                onPress={handleDisconnectTrainer}
+              >
+                <Ionicons name="person-remove-outline" size={18} color={Theme.colors.error} />
+                <Text style={styles.disconnectButtonText}>Cancelar conexão</Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
+
+        {/* App Information Card */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Sobre o Aplicativo</Text>
+        </View>
+
+        <View style={styles.card}>
+          <View style={styles.infoRow}>
+            <Ionicons name="information-circle-outline" size={20} color={Theme.colors.textSecondary} />
+            <View style={styles.infoContent}>
+              <Text style={styles.infoLabel}>Versão</Text>
+              <Text style={styles.infoValue}>1.0.0</Text>
+            </View>
+          </View>
+
+          <View style={styles.appDescription}>
+            <Text style={styles.appDescriptionText}>
+              ConnectWorkout - Sua plataforma de treinos
+            </Text>
+          </View>
+
+          <TouchableOpacity
+            style={styles.viewProfileButton}
+            onPress={() => router.push('/(private)/(student)/app-info')}
+          >
+            <Text style={styles.viewProfileButtonText}>Ver Informações Completas</Text>
+            <Ionicons name="arrow-forward" size={18} color={Theme.colors.primary} />
+          </TouchableOpacity>
+        </View>
+
+        {/* Account Actions */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Ações da Conta</Text>
+        </View>
+
+        <View style={styles.card}>
+          <TouchableOpacity
+            style={styles.actionItem}
+            onPress={() => setShowPasswordChange(!showPasswordChange)}
+          >
+            <View style={styles.actionLeft}>
+              <View style={[styles.actionIcon, { backgroundColor: Theme.colors.primaryLight }]}>
+                <Ionicons name="key-outline" size={20} color={Theme.colors.darkerGray} />
+              </View>
+              <Text style={styles.actionText}>Alterar Senha</Text>
+            </View>
+            <Ionicons
+              name={showPasswordChange ? 'chevron-up' : 'chevron-forward'}
+              size={20}
+              color={Theme.colors.textSecondary}
+            />
+          </TouchableOpacity>
+
+          {showPasswordChange && (
+            <View style={styles.passwordSection}>
+              <TextInput
+                style={styles.passwordInput}
+                placeholder="Senha Atual"
+                placeholderTextColor={Theme.colors.textTertiary}
+                value={passwordData.currentPassword}
+                onChangeText={(text) => setPasswordData(prev => ({ ...prev, currentPassword: text }))}
+                secureTextEntry
+              />
+              <TextInput
+                style={styles.passwordInput}
+                placeholder="Nova Senha"
+                placeholderTextColor={Theme.colors.textTertiary}
+                value={passwordData.newPassword}
+                onChangeText={(text) => setPasswordData(prev => ({ ...prev, newPassword: text }))}
+                secureTextEntry
+              />
+              <TextInput
+                style={styles.passwordInput}
+                placeholder="Confirmar Nova Senha"
+                placeholderTextColor={Theme.colors.textTertiary}
+                value={passwordData.confirmPassword}
+                onChangeText={(text) => setPasswordData(prev => ({ ...prev, confirmPassword: text }))}
+                secureTextEntry
+              />
+              <TouchableOpacity
+                style={[styles.button, styles.saveButton, styles.fullWidthButton]}
+                onPress={handleChangePassword}
+                disabled={saving}
+              >
+                {saving ? (
+                  <ActivityIndicator size="small" color={Theme.colors.white} />
+                ) : (
+                  <Text style={styles.saveButtonText}>Atualizar Senha</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          )}
+
+          <View style={styles.divider} />
+
+          <TouchableOpacity
+            style={styles.actionItem}
+            onPress={handleLogout}
+            disabled={loggingOut}
+          >
+            <View style={styles.actionLeft}>
+              <View style={[styles.actionIcon, { backgroundColor: Theme.colors.errorLight }]}>
+                {loggingOut ? (
+                  <ActivityIndicator size="small" color={Theme.colors.error} />
+                ) : (
+                  <Ionicons name="log-out-outline" size={20} color={Theme.colors.error} />
+                )}
+              </View>
+              <Text style={[styles.actionText, { color: Theme.colors.error }]}>
+                {loggingOut ? 'Saindo...' : 'Sair'}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={Theme.colors.error} />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.bottomSpacing} />
+      </ScrollView>
+    </SafeAreaView>
+  );
 }
 
 const styles = StyleSheet.create({
-	container: {
-		flex: 1,
-		backgroundColor: '#F9FAFB',
-	},
-	scrollView: {
-		flex: 1,
-		paddingHorizontal: 16,
-	},
-	loadingContainer: {
-		flex: 1,
-		justifyContent: 'center',
-		alignItems: 'center',
-	},
-	loadingText: {
-		marginTop: 16,
-		fontSize: 16,
-		color: '#6B7280',
-	},
-	header: {
-		paddingTop: 16,
-		paddingBottom: 24,
-	},
-	title: {
-		fontSize: 28,
-		fontWeight: '700',
-		color: '#111827',
-	},
-	card: {
-		backgroundColor: '#FFFFFF',
-		borderRadius: 16,
-		padding: 20,
-		marginBottom: 16,
-		shadowColor: '#000',
-		shadowOffset: { width: 0, height: 2 },
-		shadowOpacity: 0.05,
-		shadowRadius: 8,
-		elevation: 2,
-	},
-	userInfo: {
-		flexDirection: 'row',
-		alignItems: 'center',
-	},
-	avatar: {
-		width: 64,
-		height: 64,
-		borderRadius: 32,
-		backgroundColor: '#F0F9F0',
-		justifyContent: 'center',
-		alignItems: 'center',
-		marginRight: 16,
-	},
-	userDetails: {
-		flex: 1,
-	},
-	userName: {
-		fontSize: 20,
-		fontWeight: '700',
-		color: '#111827',
-		marginBottom: 4,
-	},
-	userEmail: {
-		fontSize: 14,
-		color: '#6B7280',
-	},
-	sectionHeader: {
-		marginTop: 8,
-		marginBottom: 12,
-	},
-	sectionTitle: {
-		fontSize: 18,
-		fontWeight: '600',
-		color: '#111827',
-	},
-	trainerHeader: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		marginBottom: 16,
-	},
-	trainerAvatar: {
-		width: 56,
-		height: 56,
-		borderRadius: 28,
-		backgroundColor: '#F0F9F0',
-		justifyContent: 'center',
-		alignItems: 'center',
-		marginRight: 12,
-	},
-	trainerInfo: {
-		flex: 1,
-	},
-	trainerName: {
-		fontSize: 18,
-		fontWeight: '600',
-		color: '#111827',
-		marginBottom: 2,
-	},
-	trainerEmail: {
-		fontSize: 14,
-		color: '#6B7280',
-		marginBottom: 2,
-	},
-	trainerStats: {
-		fontSize: 12,
-		color: '#9CA3AF',
-	},
-	trainerDetail: {
-		marginBottom: 12,
-	},
-	detailLabel: {
-		fontSize: 12,
-		fontWeight: '500',
-		color: '#6B7280',
-		marginBottom: 4,
-	},
-	detailValue: {
-		fontSize: 14,
-		color: '#111827',
-	},
-	disconnectButton: {
-		marginTop: 16,
-		paddingVertical: 12,
-		paddingHorizontal: 16,
-		borderRadius: 8,
-		borderWidth: 1,
-		borderColor: '#EF4444',
-		backgroundColor: '#FEF2F2',
-		alignItems: 'center',
-		flexDirection: 'row',
-		justifyContent: 'center',
-	},
-	disconnectButtonText: {
-		fontSize: 14,
-		fontWeight: '600',
-		color: '#EF4444',
-	},
-	actionItem: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		justifyContent: 'space-between',
-		paddingVertical: 12,
-	},
-	actionLeft: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		flex: 1,
-	},
-	actionIcon: {
-		width: 40,
-		height: 40,
-		borderRadius: 8,
-		backgroundColor: '#F9FAFB',
-		justifyContent: 'center',
-		alignItems: 'center',
-		marginRight: 12,
-	},
-	actionIconDanger: {
-		backgroundColor: '#FEF2F2',
-	},
-	actionText: {
-		fontSize: 16,
-		fontWeight: '500',
-		color: '#111827',
-	},
-	actionTextDanger: {
-		color: '#EF4444',
-	},
-	bottomSpacing: {
-		height: 24,
-	},
+  container: {
+    flex: 1,
+    backgroundColor: Theme.colors.background,
+  },
+  scrollView: {
+    flex: 1,
+    paddingHorizontal: 16,
+  },
+  header: {
+    paddingTop: 16,
+    paddingBottom: 24,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: Theme.colors.textPrimary,
+  },
+  card: {
+    backgroundColor: Theme.colors.white,
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  cardHeader: {
+    marginBottom: 16,
+  },
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: Theme.colors.textPrimary,
+  },
+  avatarSection: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  avatar: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: Theme.colors.primaryLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  userName: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: Theme.colors.textPrimary,
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  userRole: {
+    fontSize: 14,
+    color: Theme.colors.textSecondary,
+    textAlign: 'center',
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  infoContent: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  infoLabel: {
+    fontSize: 12,
+    color: Theme.colors.textSecondary,
+    marginBottom: 2,
+  },
+  infoValue: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: Theme.colors.textPrimary,
+  },
+  viewProfileButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: Theme.colors.primaryLight,
+    borderRadius: 8,
+    marginTop: 16,
+  },
+  viewProfileButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Theme.colors.darkerGray,
+    marginRight: 8,
+  },
+  appDescription: {
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+  },
+  appDescriptionText: {
+    fontSize: 14,
+    color: Theme.colors.textSecondary,
+    lineHeight: 20,
+    textAlign: 'center',
+  },
+  sectionHeader: {
+    marginTop: 8,
+    marginBottom: 12,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: Theme.colors.textPrimary,
+  },
+  trainerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  trainerAvatar: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: Theme.colors.primaryLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  trainerInfo: {
+    flex: 1,
+  },
+  trainerName: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: Theme.colors.textPrimary,
+    marginBottom: 2,
+  },
+  trainerEmail: {
+    fontSize: 14,
+    color: Theme.colors.textSecondary,
+  },
+  disconnectButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: Theme.colors.errorLight,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  disconnectButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Theme.colors.error,
+    marginLeft: 8,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: Theme.colors.border,
+    marginVertical: 12,
+  },
+  actionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+  },
+  actionLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  actionIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  actionText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: Theme.colors.textPrimary,
+  },
+  passwordSection: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: Theme.colors.border,
+  },
+  passwordInput: {
+    backgroundColor: Theme.colors.background,
+    borderWidth: 1,
+    borderColor: Theme.colors.gray300,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 15,
+    color: Theme.colors.textPrimary,
+    marginBottom: 12,
+  },
+  button: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  saveButton: {
+    backgroundColor: Theme.colors.primary,
+  },
+  saveButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: Theme.colors.textOnPrimary,
+  },
+  fullWidthButton: {
+    marginTop: 12,
+  },
+  bottomSpacing: {
+    height: 24,
+  },
 });

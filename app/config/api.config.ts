@@ -89,6 +89,7 @@ export const API_ENDPOINTS = {
     GET_STUDENT_DETAILS: (studentId: number) => `/api/instructors/students/${studentId}`,
     CONNECT_WITH_STUDENT: '/api/instructors/connect',
     REMOVE_STUDENT: (studentId: number) => `/api/instructors/students/${studentId}`,
+    GET_STATISTICS: '/api/instructors/statistics', // Phase 1: Dashboard statistics
   },
 
   // Student endpoints

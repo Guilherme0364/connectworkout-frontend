@@ -19,12 +19,14 @@ export interface AuthContextType extends AuthState {
   register: (data: RegisterUserDto) => Promise<void>;
   logout: () => Promise<void>;
   setCredentials: (token: string, role: UserRole, user: UserDto) => Promise<void>;
+  updateUser: (user: UserDto) => Promise<void>;
   checkAuthState: () => Promise<void>;
 }
 
 type AuthAction =
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_CREDENTIALS'; payload: { token: string; role: UserRole; user: UserDto } }
+  | { type: 'UPDATE_USER'; payload: { user: UserDto } }
   | { type: 'CLEAR_CREDENTIALS' }
   | { type: 'RESTORE_CREDENTIALS'; payload: { token: string; role: UserRole; user: UserDto } };
 
@@ -51,6 +53,11 @@ function authReducer(state: AuthState, action: AuthAction): AuthState {
         user: action.payload.user,
         isAuthenticated: true,
         isLoading: false,
+      };
+    case 'UPDATE_USER':
+      return {
+        ...state,
+        user: action.payload.user,
       };
     case 'CLEAR_CREDENTIALS':
       return {
@@ -228,6 +235,25 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
+  const updateUser = async (user: UserDto) => {
+    try {
+      // Get current credentials to keep token and role
+      const credentials = await getStoredCredentials();
+      if (!credentials) {
+        throw new Error('No credentials found');
+      }
+
+      // Store updated user with existing token and role
+      await storeCredentials(credentials.token, credentials.role, user);
+
+      // Update state
+      dispatch({ type: 'UPDATE_USER', payload: { user } });
+    } catch (error) {
+      console.error('Update user failed:', error);
+      throw error;
+    }
+  };
+
 
   const checkAuthState = useCallback(async () => {
     dispatch({ type: 'SET_LOADING', payload: true });
@@ -295,6 +321,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       register,
       logout,
       setCredentials,
+      updateUser,
       checkAuthState,
     }),
     [state, checkAuthState]

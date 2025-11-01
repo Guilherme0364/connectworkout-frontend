@@ -208,6 +208,12 @@ export default function Students() {
 		router.push(`/(private)/(coach)/(workout)/student-workouts?studentId=${studentId}`);
 	};
 
+	const handleViewProfile = (studentId: number) => {
+		// Navigate to student profile
+		console.log('🔘 View profile pressed - navigating to student-profile');
+		router.push(`/(private)/(coach)/student-profile?studentId=${studentId}`);
+	};
+
 	const handleAddStudent = () => {
 		console.log('🔘 handleAddStudent called - navigating to add-student screen');
 		router.push('/(private)/(coach)/add-student');
@@ -280,7 +286,7 @@ export default function Students() {
 					<Ionicons name="search" size={20} color="#9CA3AF" style={styles.searchIcon} />
 					<TextInput
 						style={styles.searchInput}
-						placeholder="Search students..."
+						placeholder="Buscar alunos..."
 						value={searchQuery}
 						onChangeText={setSearchQuery}
 						placeholderTextColor="#9CA3AF"
@@ -313,6 +319,7 @@ export default function Students() {
 				</View>
 
 				{/* Students List */}
+				<View style={styles.studentsListSpacing} />
 				{filteredStudents.length === 0 ? (
 					<EmptyState
 						icon="people-outline"
@@ -338,7 +345,6 @@ export default function Students() {
 										</View>
 										<View style={styles.studentInfo}>
 											<Text style={styles.studentName}>{student.name}</Text>
-											<Text style={styles.studentEmail}>{student.email}</Text>
 											<View style={styles.studentMeta}>
 												<View
 													style={[
@@ -365,13 +371,13 @@ export default function Students() {
 										</View>
 										<View style={styles.studentCardActions}>
 											<Pressable
-												style={styles.removeStudentButton}
+												style={styles.viewProfileButton}
 												onPress={(e) => {
 													e.stopPropagation();
-													handleRemoveStudent(student.id, student.name);
+													handleViewProfile(student.id);
 												}}
 											>
-												<Ionicons name="trash-outline" size={18} color="#EF4444" />
+												<Ionicons name="person-outline" size={18} color="#6366f1" />
 											</Pressable>
 											<Pressable
 												style={styles.manageWorkoutsButton}
@@ -381,6 +387,15 @@ export default function Students() {
 												}}
 											>
 												<Ionicons name="create-outline" size={18} color="#BBF246" />
+											</Pressable>
+											<Pressable
+												style={styles.removeStudentButton}
+												onPress={(e) => {
+													e.stopPropagation();
+													handleRemoveStudent(student.id, student.name);
+												}}
+											>
+												<Ionicons name="trash-outline" size={18} color="#EF4444" />
 											</Pressable>
 											<Ionicons name="chevron-forward-outline" size={20} color="#9CA3AF" />
 										</View>
@@ -512,7 +527,10 @@ const styles = StyleSheet.create({
 		color: '#111827',
 	},
 	filterContainer: {
-		marginBottom: 24,
+		marginBottom: 8,
+	},
+	studentsListSpacing: {
+		marginTop: 16,
 	},
 	filterTab: {
 		paddingHorizontal: 16,
@@ -586,16 +604,23 @@ const styles = StyleSheet.create({
 		alignItems: 'center',
 		gap: 8,
 	},
-	removeStudentButton: {
+	viewProfileButton: {
 		padding: 8,
 		borderRadius: 8,
-		backgroundColor: '#FEF2F2',
-		marginRight: 8,
+		backgroundColor: '#EEF2FF',
+		marginRight: 4,
 	},
 	manageWorkoutsButton: {
 		padding: 8,
 		borderRadius: 8,
 		backgroundColor: '#F0F9F0',
+		marginRight: 4,
+	},
+	removeStudentButton: {
+		padding: 8,
+		borderRadius: 8,
+		backgroundColor: '#FEF2F2',
+		marginRight: 8,
 	},
 	statusBadge: {
 		paddingHorizontal: 8,

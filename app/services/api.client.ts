@@ -37,15 +37,6 @@ async function request<T = any>(
 ): Promise<T> {
   const url = `${API_CONFIG.BASE_URL}${endpoint}`;
 
-  // Parse body for logging if present
-  const requestBody = options.body ? JSON.parse(options.body as string) : null;
-
-  console.log('🚀 Making request:', {
-    method: options.method || 'GET',
-    url: url,
-    body: requestBody,
-  });
-
   try {
     // Get auth token
     const token = await getAuthToken();
@@ -67,12 +58,6 @@ async function request<T = any>(
       headers,
     });
 
-    console.log('✅ Response received:', {
-      status: response.status,
-      statusText: response.statusText,
-      url: url,
-    });
-
     // Parse response body
     let data: any;
     const contentType = response.headers.get('content-type');
@@ -87,7 +72,7 @@ async function request<T = any>(
     if (!response.ok) {
       // Special handling for 401 Unauthorized (session expired)
       if (response.status === 401) {
-        console.warn('🚫 401 Unauthorized - Session expired');
+        console.warn('Session expired');
 
         // Call global logout to clear everything and redirect
         // This happens directly without going through React state
@@ -110,23 +95,19 @@ async function request<T = any>(
         errors: data?.errors,
       };
 
-      console.error('❌ Request failed:', {
-        status: error.status,
-        message: error.message,
-        errors: error.errors,
-        requestUrl: url,
-        requestMethod: options.method || 'GET',
-        requestBody: requestBody,
-      });
+      console.error('Request failed:', error.message);
       throw error;
+    }
+
+    // Unwrap ApiResponse<T> structure if present
+    // Backend may return { data: T, message: string } wrapper
+    if (data && typeof data === 'object' && 'data' in data && !Array.isArray(data)) {
+      return data.data as T;
     }
 
     return data as T;
   } catch (error: any) {
-    console.error('❌ Request error:', {
-      message: error.message,
-      url: url,
-    });
+    console.error('Request error:', error.message);
 
     // If it's already an ApiError, rethrow it
     if (error.status !== undefined) {

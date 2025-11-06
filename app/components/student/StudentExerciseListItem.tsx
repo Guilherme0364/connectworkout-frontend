@@ -6,7 +6,8 @@
  */
 
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import type { Exercise } from '../../types/api.types';
 import { Theme } from '../../styles/theme';
@@ -39,9 +40,9 @@ const StudentExerciseListItem: React.FC<StudentExerciseListItemProps> = ({
           <Image
             source={ExerciseImageService.getImageProps(exercise.exerciseDbId, RESOLUTION.INSTRUCTOR)}
             style={styles.thumbnail}
-            resizeMode="cover"
+            contentFit="cover"
             onError={(error) => {
-              console.error('Failed to load exercise GIF:', exercise.gifUrl, error.nativeEvent);
+              console.error('Failed to load exercise GIF:', exercise.gifUrl, error);
               setImageError(true);
             }}
           />

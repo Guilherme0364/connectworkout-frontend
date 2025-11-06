@@ -21,8 +21,8 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useStudent } from '../contexts/StudentContext';
-import { Gender, UpdateStudentProfileDto } from '../types/api.types';
+import { useStudent } from '../../contexts/StudentContext';
+import { Gender, UpdateStudentProfileDto } from '../../types/api.types';
 
 export default function EditProfileScreen() {
   const router = useRouter();

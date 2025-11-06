@@ -64,7 +64,8 @@ export const API_CONFIG = {
     'Content-Type': 'application/json',
   },
   // RapidAPI credentials for ExerciseDB image loading
-  RAPID_API_KEY: 'YOUR_RAPIDAPI_KEY_HERE', // ⚠️ REPLACE WITH YOUR ACTUAL KEY
+  // Get your key from: https://rapidapi.com/justin-WFnsXH_t6/api/exercisedb
+  RAPID_API_KEY: '2f791940a4mshffd29dcc0ad34a7p1c54e5jsnd95ce765fd13',
   RAPID_API_HOST: 'exercisedb.p.rapidapi.com',
 } as const;
 
@@ -90,6 +91,9 @@ export const API_ENDPOINTS = {
     CONNECT_WITH_STUDENT: '/api/instructors/connect',
     REMOVE_STUDENT: (studentId: number) => `/api/instructors/students/${studentId}`,
     GET_STATISTICS: '/api/instructors/statistics', // Phase 1: Dashboard statistics
+    GET_INVITATIONS: '/api/instructors/invitations', // Get sent invitations
+    CANCEL_INVITATION: (invitationId: number) => `/api/instructors/invitations/${invitationId}`, // Cancel invitation
+    DELETE_ACCOUNT: '/api/instructors/account', // Delete instructor account
   },
 
   // Student endpoints
@@ -97,12 +101,16 @@ export const API_ENDPOINTS = {
     GET_PROFILE: '/api/students/profile',
     UPDATE_PROFILE: '/api/students/profile',
     GET_DASHBOARD: '/api/students/dashboard',
-    GET_TRAINER_REQUESTS: '/api/students/trainer-requests',
+    GET_TRAINER_REQUESTS: '/api/students/trainer-requests', // Legacy endpoint
+    GET_PENDING_INVITATIONS: '/api/students/invitations/pending', // New invitation workflow
+    ACCEPT_INVITATION: (invitationId: number) => `/api/students/invitations/${invitationId}/accept`, // New workflow
+    REJECT_INVITATION: (invitationId: number) => `/api/students/invitations/${invitationId}/reject`, // New workflow
     GET_TRAINER_DETAILS: (trainerId: number) => `/api/students/trainers/${trainerId}`,
     GET_CURRENT_TRAINER: '/api/students/current-trainer',
-    ACCEPT_TRAINER: (trainerId: number) => `/api/students/accept-trainer/${trainerId}`,
-    REJECT_TRAINER: (trainerId: number) => `/api/students/reject-trainer/${trainerId}`,
+    ACCEPT_TRAINER: (trainerId: number) => `/api/students/accept-trainer/${trainerId}`, // Legacy endpoint
+    REJECT_TRAINER: (trainerId: number) => `/api/students/reject-trainer/${trainerId}`, // Legacy endpoint
     DISCONNECT_TRAINER: '/api/students/disconnect-trainer',
+    DELETE_ACCOUNT: '/api/students/account', // Delete student account
   },
 
   // Exercise endpoints

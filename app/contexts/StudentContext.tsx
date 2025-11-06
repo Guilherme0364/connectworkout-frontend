@@ -13,6 +13,7 @@ import {
   TrainerDto,
   UpdateStudentProfileDto,
   StudentDashboardDto,
+  InvitationDto,
 } from '../types/api.types';
 
 // ============================================================================
@@ -22,7 +23,8 @@ import {
 export interface StudentState {
   profile: StudentProfileDto | null;
   currentTrainer: TrainerDto | null;
-  trainerRequests: TrainerRequestDto[];
+  trainerRequests: TrainerRequestDto[]; // Legacy
+  pendingInvitations: InvitationDto[]; // New invitation workflow
   dashboardData: StudentDashboardDto | null;
   hasTrainer: boolean;
   isLoading: boolean;
@@ -32,11 +34,14 @@ export interface StudentState {
 export interface StudentContextType extends StudentState {
   loadProfile: () => Promise<void>;
   updateProfile: (data: UpdateStudentProfileDto) => Promise<void>;
-  loadTrainerRequests: () => Promise<void>;
+  loadTrainerRequests: () => Promise<void>; // Legacy
+  loadPendingInvitations: () => Promise<void>; // New invitation workflow
   loadCurrentTrainer: () => Promise<void>;
   loadDashboard: () => Promise<void>;
-  acceptTrainer: (trainerId: number) => Promise<void>;
-  rejectTrainer: (trainerId: number) => Promise<void>;
+  acceptTrainer: (trainerId: number) => Promise<void>; // Legacy
+  acceptInvitation: (invitationId: number) => Promise<void>; // New invitation workflow
+  rejectTrainer: (trainerId: number) => Promise<void>; // Legacy
+  rejectInvitation: (invitationId: number) => Promise<void>; // New invitation workflow
   disconnectTrainer: () => Promise<void>;
   refreshStudentData: () => Promise<void>;
 }
@@ -47,6 +52,7 @@ type StudentAction =
   | { type: 'SET_PROFILE'; payload: StudentProfileDto }
   | { type: 'SET_CURRENT_TRAINER'; payload: TrainerDto | null }
   | { type: 'SET_TRAINER_REQUESTS'; payload: TrainerRequestDto[] }
+  | { type: 'SET_PENDING_INVITATIONS'; payload: InvitationDto[] }
   | { type: 'SET_DASHBOARD_DATA'; payload: StudentDashboardDto }
   | { type: 'CLEAR_DATA' };
 
@@ -58,6 +64,7 @@ const initialState: StudentState = {
   profile: null,
   currentTrainer: null,
   trainerRequests: [],
+  pendingInvitations: [],
   dashboardData: null,
   hasTrainer: false,
   isLoading: true,
@@ -96,6 +103,14 @@ function studentReducer(state: StudentState, action: StudentAction): StudentStat
       return {
         ...state,
         trainerRequests: action.payload,
+        isLoading: false,
+      };
+    case 'SET_PENDING_INVITATIONS':
+      console.log('[StudentContext Reducer] SET_PENDING_INVITATIONS called with:', action.payload.length, 'invitations');
+      console.log('[StudentContext Reducer] Invitation data:', JSON.stringify(action.payload, null, 2));
+      return {
+        ...state,
+        pendingInvitations: action.payload,
         isLoading: false,
       };
     case 'SET_DASHBOARD_DATA':
@@ -165,6 +180,19 @@ export function StudentProvider({ children }: StudentProviderProps) {
     }
   }, []);
 
+  const loadPendingInvitations = useCallback(async () => {
+    try {
+      dispatch({ type: 'SET_LOADING', payload: true });
+      const invitations = await StudentService.getPendingInvitations();
+      console.log('[StudentContext] Invitations received from service:', JSON.stringify(invitations, null, 2));
+      console.log('[StudentContext] Dispatching SET_PENDING_INVITATIONS with', invitations.length, 'invitations');
+      dispatch({ type: 'SET_PENDING_INVITATIONS', payload: invitations });
+    } catch (error: any) {
+      console.error('Failed to load pending invitations:', error);
+      dispatch({ type: 'SET_ERROR', payload: error.message || 'Failed to load pending invitations' });
+    }
+  }, []);
+
   const loadCurrentTrainer = useCallback(async () => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
@@ -206,6 +234,31 @@ export function StudentProvider({ children }: StudentProviderProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const acceptInvitation = useCallback(async (invitationId: number) => {
+    try {
+      dispatch({ type: 'SET_LOADING', payload: true });
+
+      console.log('[StudentContext] Accepting invitation:', invitationId);
+      const response = await StudentService.acceptInvitation(invitationId);
+      console.log('[StudentContext] Invitation accepted, response:', response);
+
+      // Refresh all student data to ensure everything is synced
+      // loadDashboard includes trainer and profile data
+      console.log('[StudentContext] Refreshing student data after acceptance...');
+      await Promise.all([
+        loadDashboard(),
+        loadPendingInvitations(),
+      ]);
+
+      console.log('[StudentContext] Student data refreshed successfully');
+    } catch (error: any) {
+      console.error('[StudentContext] Failed to accept invitation:', error);
+      dispatch({ type: 'SET_ERROR', payload: error.message || 'Failed to accept invitation' });
+      throw error;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const rejectTrainer = useCallback(async (trainerId: number) => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
@@ -216,6 +269,26 @@ export function StudentProvider({ children }: StudentProviderProps) {
     } catch (error: any) {
       console.error('Failed to reject trainer:', error);
       dispatch({ type: 'SET_ERROR', payload: error.message || 'Failed to reject trainer' });
+      throw error;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const rejectInvitation = useCallback(async (invitationId: number) => {
+    try {
+      dispatch({ type: 'SET_LOADING', payload: true });
+
+      console.log('[StudentContext] Rejecting invitation:', invitationId);
+      await StudentService.rejectInvitation(invitationId);
+      console.log('[StudentContext] Invitation rejected successfully');
+
+      // Refresh pending invitations after rejection
+      console.log('[StudentContext] Refreshing pending invitations...');
+      await loadPendingInvitations();
+      console.log('[StudentContext] Pending invitations refreshed');
+    } catch (error: any) {
+      console.error('[StudentContext] Failed to reject invitation:', error);
+      dispatch({ type: 'SET_ERROR', payload: error.message || 'Failed to reject invitation' });
       throw error;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -242,8 +315,8 @@ export function StudentProvider({ children }: StudentProviderProps) {
       dispatch({ type: 'SET_LOADING', payload: true });
       // Use the new dashboard endpoint which consolidates the data
       await loadDashboard();
-      // Also load trainer requests separately as they're not in dashboard
-      await loadTrainerRequests();
+      // Load pending invitations (new invitation workflow)
+      await loadPendingInvitations();
     } catch (error: any) {
       console.error('Failed to refresh student data:', error);
       dispatch({ type: 'SET_ERROR', payload: error.message || 'Failed to refresh data' });
@@ -261,10 +334,13 @@ export function StudentProvider({ children }: StudentProviderProps) {
       loadProfile,
       updateProfile,
       loadTrainerRequests,
+      loadPendingInvitations,
       loadCurrentTrainer,
       loadDashboard,
       acceptTrainer,
+      acceptInvitation,
       rejectTrainer,
+      rejectInvitation,
       disconnectTrainer,
       refreshStudentData,
     }),
@@ -273,10 +349,13 @@ export function StudentProvider({ children }: StudentProviderProps) {
       loadProfile,
       updateProfile,
       loadTrainerRequests,
+      loadPendingInvitations,
       loadCurrentTrainer,
       loadDashboard,
       acceptTrainer,
+      acceptInvitation,
       rejectTrainer,
+      rejectInvitation,
       disconnectTrainer,
       refreshStudentData,
     ]
@@ -302,6 +381,7 @@ export function useStudent(): StudentContextType {
       profile: null,
       currentTrainer: null,
       trainerRequests: [],
+      pendingInvitations: [],
       dashboardData: null,
       hasTrainer: false,
       isLoading: false,
@@ -309,10 +389,13 @@ export function useStudent(): StudentContextType {
       loadProfile: async () => {},
       updateProfile: async () => {},
       loadTrainerRequests: async () => {},
+      loadPendingInvitations: async () => {},
       loadCurrentTrainer: async () => {},
       loadDashboard: async () => {},
       acceptTrainer: async () => {},
+      acceptInvitation: async () => {},
       rejectTrainer: async () => {},
+      rejectInvitation: async () => {},
       disconnectTrainer: async () => {},
       refreshStudentData: async () => {},
     };

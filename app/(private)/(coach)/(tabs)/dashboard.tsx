@@ -14,7 +14,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../../hooks/useAuth';
 import { InstructorService } from '../../../services';
-import { StudentSummaryDto } from '../../../types/api.types';
+import { StudentSummaryDto, InstructorInvitationDto } from '../../../types/api.types';
 import { handleApiError } from '../../../utils/errorHandler';
 import { Theme } from '../../../styles/theme';
 import StatCard from '../../../components/dashboard/StatCard';
@@ -35,6 +35,8 @@ export default function CoachDashboard() {
   const [recentStudents, setRecentStudents] = useState<StudentSummaryDto[]>([]);
   const [workoutsThisMonth, setWorkoutsThisMonth] = useState(0);
   const [newStudentsThisWeek, setNewStudentsThisWeek] = useState(0);
+  const [pendingInvitations, setPendingInvitations] = useState(0);
+  const [invitations, setInvitations] = useState<InstructorInvitationDto[]>([]);
 
   // Activity feed - Phase 2 feature (not yet implemented in backend)
   // TODO: Implement when /api/activities/feed endpoint is available
@@ -42,7 +44,7 @@ export default function CoachDashboard() {
 
   const fetchDashboardData = useCallback(async () => {
     try {
-      // Fetch statistics and students in parallel (Phase 1)
+      // Fetch statistics and students in parallel
       const [statistics, studentsData] = await Promise.all([
         InstructorService.getStatistics(),
         InstructorService.getStudents(),
@@ -59,6 +61,13 @@ export default function CoachDashboard() {
       setStudents(studentsData);
       const sortedStudents = [...studentsData].slice(0, 6);
       setRecentStudents(sortedStudents);
+
+      // Fetch invitations
+      const invitationsData = await InstructorService.getInvitations();
+      setInvitations(invitationsData);
+      // Filter by status number: 0 = Pending
+      const pendingCount = invitationsData.filter(inv => inv.status === 0).length;
+      setPendingInvitations(pendingCount);
 
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -95,6 +104,10 @@ export default function CoachDashboard() {
       pathname: '/(private)/(coach)/student-workout-view',
       params: { studentId },
     });
+  };
+
+  const handleViewInvitations = () => {
+    router.push('/(private)/(coach)/pending-invitations');
   };
 
   if (loading) {
@@ -159,6 +172,53 @@ export default function CoachDashboard() {
             color={Theme.colors.accent}
           />
         </View>
+
+        {/* Invitations Summary Card */}
+        <TouchableOpacity
+          style={styles.invitationsCard}
+          onPress={handleViewInvitations}
+          activeOpacity={0.7}
+        >
+          <View style={styles.invitationsCardContent}>
+            <View style={styles.invitationsIconContainer}>
+              <Ionicons
+                name="mail-outline"
+                size={32}
+                color={pendingInvitations > 0 ? Theme.colors.primary : Theme.colors.gray400}
+              />
+            </View>
+            <View style={styles.invitationsTextContainer}>
+              <Text style={styles.invitationsTitle}>Convites Pendentes</Text>
+              <Text style={styles.invitationsCount}>
+                {pendingInvitations === 0 ? 'Nenhum convite pendente' : `${pendingInvitations} ${pendingInvitations === 1 ? 'convite' : 'convites'} aguardando resposta`}
+              </Text>
+            </View>
+            <View style={styles.invitationsButtonContainer}>
+              <Text style={styles.invitationsButtonText}>Ver Convites</Text>
+              <Ionicons name="chevron-forward" size={20} color={Theme.colors.primary} />
+            </View>
+          </View>
+        </TouchableOpacity>
+
+        {/* Pending Invitations Banner (Removed - replaced by card above) */}
+        {false && pendingInvitations > 0 && (
+          <TouchableOpacity style={styles.invitationBanner} onPress={handleViewInvitations}>
+            <View style={styles.invitationBannerContent}>
+              <View style={styles.invitationIconContainer}>
+                <Ionicons name="mail-outline" size={24} color="#111827" />
+              </View>
+              <View style={styles.invitationTextContainer}>
+                <Text style={styles.invitationTitle}>
+                  {pendingInvitations} {pendingInvitations === 1 ? 'convite pendente' : 'convites pendentes'}
+                </Text>
+                <Text style={styles.invitationSubtitle}>
+                  Aguardando resposta {pendingInvitations === 1 ? 'do aluno' : 'dos alunos'}
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={24} color="#6B7280" />
+            </View>
+          </TouchableOpacity>
+        )}
 
         {/* Active Students Section */}
         <View style={styles.section}>
@@ -486,5 +546,91 @@ const styles = StyleSheet.create({
   },
   bottomSpacing: {
     height: 20,
+  },
+  invitationBanner: {
+    backgroundColor: '#FEF3C7',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  invitationBannerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  invitationIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#BBF246',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  invitationTextContainer: {
+    flex: 1,
+  },
+  invitationTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 2,
+  },
+  invitationSubtitle: {
+    fontSize: 13,
+    color: '#92400E',
+  },
+  // Invitations Summary Card styles
+  invitationsCard: {
+    backgroundColor: Theme.colors.white,
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  invitationsCardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  invitationsIconContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: Theme.colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 16,
+  },
+  invitationsTextContainer: {
+    flex: 1,
+  },
+  invitationsTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Theme.colors.textPrimary,
+    marginBottom: 4,
+  },
+  invitationsCount: {
+    fontSize: 14,
+    color: Theme.colors.textSecondary,
+  },
+  invitationsButtonContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingLeft: 12,
+  },
+  invitationsButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Theme.colors.primary,
+    marginRight: 4,
   },
 });

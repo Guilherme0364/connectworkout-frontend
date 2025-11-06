@@ -19,14 +19,14 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { StudentService } from '../services';
-import { useStudent } from '../contexts/StudentContext';
-import { TrainerDto } from '../types/api.types';
+import { StudentService } from '../../services';
+import { useStudent } from '../../contexts/StudentContext';
+import { TrainerDto } from '../../types/api.types';
 
 export default function TrainerProfileScreen() {
   const router = useRouter();
-  const { id } = useLocalSearchParams<{ id: string }>();
-  const { acceptTrainer, rejectTrainer } = useStudent();
+  const { id, invitationId } = useLocalSearchParams<{ id: string; invitationId?: string }>();
+  const { acceptTrainer, rejectTrainer, acceptInvitation, rejectInvitation } = useStudent();
 
   const [trainer, setTrainer] = useState<TrainerDto | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -65,7 +65,21 @@ export default function TrainerProfileScreen() {
     try {
       setIsAccepting(true);
       setShowConfirmModal(false);
-      await acceptTrainer(trainer.id);
+
+      console.log('[TrainerProfile] Starting acceptance process...');
+      console.log('[TrainerProfile] Invitation ID:', invitationId);
+      console.log('[TrainerProfile] Trainer ID:', trainer.id);
+
+      // Use new invitation workflow if invitationId is provided
+      if (invitationId) {
+        console.log('[TrainerProfile] Using new invitation workflow');
+        await acceptInvitation(parseInt(invitationId));
+      } else {
+        console.log('[TrainerProfile] Using legacy trainer workflow');
+        await acceptTrainer(trainer.id);
+      }
+
+      console.log('[TrainerProfile] Acceptance successful!');
 
       Alert.alert(
         'Sucesso!',
@@ -73,11 +87,15 @@ export default function TrainerProfileScreen() {
         [
           {
             text: 'OK',
-            onPress: () => router.replace('/(tabs)'),
+            onPress: () => {
+              console.log('[TrainerProfile] Navigating back to dashboard...');
+              router.replace('/(private)/(student)/(tabs)/dashboard');
+            },
           },
         ]
       );
     } catch (err: any) {
+      console.error('[TrainerProfile] Acceptance failed:', err);
       Alert.alert(
         'Erro',
         err.message || 'Falha ao aceitar personal. Tente novamente.'
@@ -108,11 +126,32 @@ export default function TrainerProfileScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await rejectTrainer(trainer.id);
+              console.log('[TrainerProfile] Starting rejection process...');
+              console.log('[TrainerProfile] Invitation ID:', invitationId);
+              console.log('[TrainerProfile] Trainer ID:', trainer.id);
+
+              // Use new invitation workflow if invitationId is provided
+              if (invitationId) {
+                console.log('[TrainerProfile] Using new invitation workflow for rejection');
+                await rejectInvitation(parseInt(invitationId));
+              } else {
+                console.log('[TrainerProfile] Using legacy trainer workflow for rejection');
+                await rejectTrainer(trainer.id);
+              }
+
+              console.log('[TrainerProfile] Rejection successful!');
+
               Alert.alert('Solicitação rejeitada', 'A solicitação foi removida.', [
-                { text: 'OK', onPress: handleBack },
+                {
+                  text: 'OK',
+                  onPress: () => {
+                    console.log('[TrainerProfile] Navigating back after rejection...');
+                    handleBack();
+                  }
+                },
               ]);
             } catch (err: any) {
+              console.error('[TrainerProfile] Rejection failed:', err);
               Alert.alert('Erro', err.message || 'Falha ao rejeitar solicitação');
             }
           },

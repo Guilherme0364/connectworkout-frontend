@@ -35,14 +35,14 @@ const styles = StyleSheet.create({
 	},
 
 	picker: {
-		height: 40,
+		height: 50,
 		width: '100%',
 		backgroundColor: Theme.components.inputBackground,
 		borderRadius: 8,
 		borderWidth: 1,
 		borderColor: Theme.components.inputBorder,
 		marginBottom: 8,
-		paddingHorizontal: 12,
+		color: Theme.colors.textPrimary,
 	},
 
 	linkText: {

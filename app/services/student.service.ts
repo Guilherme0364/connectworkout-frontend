@@ -17,6 +17,7 @@ import {
   AcceptTrainerDto,
   ApiResponse,
   StudentDashboardDto,
+  InvitationDto,
 } from '../types/api.types';
 
 class StudentService {
@@ -36,9 +37,15 @@ class StudentService {
    * @returns Aggregated dashboard data
    */
   async getDashboard(): Promise<StudentDashboardDto> {
+    console.log('[StudentService] Fetching dashboard data...');
     const response = await apiClient.get<StudentDashboardDto>(
       API_ENDPOINTS.STUDENTS.GET_DASHBOARD
     );
+    console.log('[StudentService] Dashboard data received:', {
+      hasTrainer: response.hasTrainer,
+      currentTrainer: response.currentTrainer?.name,
+      workoutCount: response.workoutCount,
+    });
     return response;
   }
 
@@ -56,13 +63,27 @@ class StudentService {
   }
 
   /**
-   * Get all pending trainer connection requests
+   * Get all pending trainer connection requests (Legacy endpoint)
+   * @deprecated Use getPendingInvitations() instead
    * @returns List of trainer requests
    */
   async getTrainerRequests(): Promise<TrainerRequestDto[]> {
     const response = await apiClient.get<TrainerRequestDto[]>(
       API_ENDPOINTS.STUDENTS.GET_TRAINER_REQUESTS
     );
+    return response;
+  }
+
+  /**
+   * Get all pending invitations (New invitation workflow)
+   * @returns List of pending invitations from instructors
+   */
+  async getPendingInvitations(): Promise<InvitationDto[]> {
+    console.log('[StudentService] Fetching pending invitations...');
+    const response = await apiClient.get<InvitationDto[]>(
+      API_ENDPOINTS.STUDENTS.GET_PENDING_INVITATIONS
+    );
+    console.log('[StudentService] Pending invitations count:', response.length);
     return response;
   }
 
@@ -98,7 +119,8 @@ class StudentService {
   }
 
   /**
-   * Accept a trainer connection request
+   * Accept a trainer connection request (Legacy endpoint)
+   * @deprecated Use acceptInvitation() instead
    * @param trainerId - ID of the trainer to accept
    * @returns Success message
    */
@@ -110,7 +132,25 @@ class StudentService {
   }
 
   /**
-   * Reject a trainer connection request
+   * Accept an invitation (New invitation workflow)
+   * @param invitationId - ID of the invitation to accept
+   * @returns Success response
+   */
+  async acceptInvitation(invitationId: number): Promise<{ success: boolean; message: string }> {
+    console.log('[StudentService] Accepting invitation ID:', invitationId);
+    console.log('[StudentService] API endpoint:', API_ENDPOINTS.STUDENTS.ACCEPT_INVITATION(invitationId));
+
+    const response = await apiClient.post<{ success: boolean; message: string }>(
+      API_ENDPOINTS.STUDENTS.ACCEPT_INVITATION(invitationId)
+    );
+
+    console.log('[StudentService] Accept invitation response:', response);
+    return response;
+  }
+
+  /**
+   * Reject a trainer connection request (Legacy endpoint)
+   * @deprecated Use rejectInvitation() instead
    * @param trainerId - ID of the trainer to reject
    * @returns Success message
    */
@@ -118,6 +158,23 @@ class StudentService {
     const response = await apiClient.post<{ message: string }>(
       API_ENDPOINTS.STUDENTS.REJECT_TRAINER(trainerId)
     );
+    return response;
+  }
+
+  /**
+   * Reject an invitation (New invitation workflow)
+   * @param invitationId - ID of the invitation to reject
+   * @returns Success response
+   */
+  async rejectInvitation(invitationId: number): Promise<{ success: boolean; message: string }> {
+    console.log('[StudentService] Rejecting invitation ID:', invitationId);
+    console.log('[StudentService] API endpoint:', API_ENDPOINTS.STUDENTS.REJECT_INVITATION(invitationId));
+
+    const response = await apiClient.post<{ success: boolean; message: string }>(
+      API_ENDPOINTS.STUDENTS.REJECT_INVITATION(invitationId)
+    );
+
+    console.log('[StudentService] Reject invitation response:', response);
     return response;
   }
 

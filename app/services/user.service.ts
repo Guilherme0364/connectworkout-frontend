@@ -92,6 +92,36 @@ export class UserService {
       throw error;
     }
   }
+
+  /**
+   * Delete student account
+   * Permanently deletes the authenticated student's account and all associated data
+   * Requires authentication (Student role)
+   * Returns 204 No Content on success
+   */
+  static async deleteStudentAccount(): Promise<void> {
+    try {
+      await apiClient.delete(API_ENDPOINTS.STUDENTS.DELETE_ACCOUNT);
+    } catch (error) {
+      console.error('Delete student account error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete instructor account
+   * Permanently deletes the authenticated instructor's account and all associated data
+   * Requires authentication (Instructor role)
+   * Returns 204 No Content on success
+   */
+  static async deleteInstructorAccount(): Promise<void> {
+    try {
+      await apiClient.delete(API_ENDPOINTS.INSTRUCTORS.DELETE_ACCOUNT);
+    } catch (error) {
+      console.error('Delete instructor account error:', error);
+      throw error;
+    }
+  }
 }
 
 export default UserService;

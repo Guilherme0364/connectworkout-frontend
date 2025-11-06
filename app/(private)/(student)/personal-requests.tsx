@@ -18,21 +18,26 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useStudent } from '../contexts/StudentContext';
-import EmptyState from '../components/EmptyState';
+import { useStudent } from '../../contexts/StudentContext';
+import EmptyState from '../../components/EmptyState';
 
 export default function PersonalRequestsScreen() {
   const router = useRouter();
-  const { trainerRequests, loadTrainerRequests, isLoading } = useStudent();
+  const { pendingInvitations, loadPendingInvitations, isLoading } = useStudent();
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    loadTrainerRequests();
+    loadPendingInvitations();
   }, []);
+
+  useEffect(() => {
+    console.log('[PersonalRequests] Component received pendingInvitations:', pendingInvitations.length);
+    console.log('[PersonalRequests] Invitations data:', JSON.stringify(pendingInvitations, null, 2));
+  }, [pendingInvitations]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await loadTrainerRequests();
+    await loadPendingInvitations();
     setRefreshing(false);
   };
 
@@ -44,11 +49,9 @@ export default function PersonalRequestsScreen() {
     }
   };
 
-  const handleViewTrainer = (trainerId: number) => {
-    router.push(`/student/trainer-profile?id=${trainerId}`);
+  const handleViewTrainer = (instructorId: number, invitationId: number) => {
+    router.push(`/(private)/(student)/trainer-profile?id=${instructorId}&invitationId=${invitationId}`);
   };
-
-  const pendingRequests = trainerRequests.filter(req => req.status === 'pending');
 
   return (
     <SafeAreaView style={styles.container}>
@@ -77,7 +80,7 @@ export default function PersonalRequestsScreen() {
             <ActivityIndicator size="large" color="#BBF246" />
             <Text style={styles.loadingText}>Carregando solicitações...</Text>
           </View>
-        ) : pendingRequests.length === 0 ? (
+        ) : pendingInvitations.length === 0 ? (
           <EmptyState
             icon="people-outline"
             title="Nenhuma solicitação"
@@ -87,32 +90,35 @@ export default function PersonalRequestsScreen() {
         ) : (
           <>
             <Text style={styles.subtitle}>
-              Você possui {pendingRequests.length} {pendingRequests.length === 1 ? 'solicitação' : 'solicitações'}
+              Você possui {pendingInvitations.length} {pendingInvitations.length === 1 ? 'convite' : 'convites'}
             </Text>
 
-            {pendingRequests.map((request) => (
+            {pendingInvitations.map((invitation) => (
               <TouchableOpacity
-                key={request.id}
+                key={invitation.invitationId}
                 style={styles.requestCard}
-                onPress={() => handleViewTrainer(request.trainerId)}
+                onPress={() => handleViewTrainer(invitation.instructorId, invitation.invitationId)}
               >
                 <View style={styles.requestInfo}>
                   <View style={styles.avatarPlaceholder}>
                     <Ionicons name="person" size={24} color="#6B7280" />
                   </View>
                   <View style={styles.requestDetails}>
-                    <Text style={styles.trainerName}>Personal {request.trainerName}</Text>
-                    <Text style={styles.trainerEmail}>{request.trainerEmail}</Text>
-                    {request.trainerStudentCount !== undefined && (
-                      <Text style={styles.trainerStats}>
-                        {request.trainerStudentCount} {request.trainerStudentCount === 1 ? 'aluno' : 'alunos'}
+                    <Text style={styles.trainerName}>Personal {invitation.instructorName}</Text>
+                    <Text style={styles.trainerEmail}>{invitation.instructorEmail}</Text>
+                    {invitation.instructorDescription && (
+                      <Text style={styles.trainerDescription} numberOfLines={2}>
+                        {invitation.instructorDescription}
                       </Text>
                     )}
+                    <Text style={styles.trainerStats}>
+                      {invitation.instructorStudentCount} {invitation.instructorStudentCount === 1 ? 'aluno' : 'alunos'}
+                    </Text>
                   </View>
                 </View>
                 <TouchableOpacity
                   style={styles.viewButton}
-                  onPress={() => handleViewTrainer(request.trainerId)}
+                  onPress={() => handleViewTrainer(invitation.instructorId, invitation.invitationId)}
                 >
                   <Ionicons name="chevron-forward" size={24} color="#6B7280" />
                 </TouchableOpacity>
@@ -219,6 +225,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6B7280',
     marginBottom: 2,
+  },
+  trainerDescription: {
+    fontSize: 13,
+    color: '#6B7280',
+    marginBottom: 4,
+    lineHeight: 18,
   },
   trainerStats: {
     fontSize: 12,

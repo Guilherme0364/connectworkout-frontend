@@ -29,6 +29,7 @@ export default function CoachProfile() {
   const [totalWorkouts, setTotalWorkouts] = useState(0);
   const [loadingStats, setLoadingStats] = useState(true);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
   // Password change state
   const [showPasswordChange, setShowPasswordChange] = useState(false);
@@ -127,11 +128,82 @@ export default function CoachProfile() {
   };
 
   const handleDeleteAccount = () => {
+    if (isDeletingAccount) return;
+
+    // First confirmation
     Alert.alert(
       'Excluir Conta',
-      'Esta funcionalidade estará disponível em breve. Ela excluirá permanentemente sua conta e todos os dados associados.',
-      [{ text: 'OK' }]
+      'Tem certeza que deseja excluir sua conta? Esta ação não pode ser desfeita.\n\nSerá excluído permanentemente:\n\n• Seu perfil de instrutor\n• Conexões com alunos\n• Histórico de treinos criados\n• Todos os seus dados',
+      [
+        {
+          text: 'Cancelar',
+          style: 'cancel'
+        },
+        {
+          text: 'Continuar',
+          style: 'destructive',
+          onPress: showFinalDeleteConfirmation
+        }
+      ]
     );
+  };
+
+  const showFinalDeleteConfirmation = () => {
+    // Second confirmation (final warning)
+    Alert.alert(
+      'Confirmação Final',
+      'ATENÇÃO: Esta ação é IRREVERSÍVEL!\n\nTodos os seus dados serão permanentemente excluídos e não poderão ser recuperados.\n\nDeseja realmente excluir sua conta?',
+      [
+        {
+          text: 'Não, manter minha conta',
+          style: 'cancel'
+        },
+        {
+          text: 'Sim, excluir permanentemente',
+          style: 'destructive',
+          onPress: confirmDeleteAccount
+        }
+      ]
+    );
+  };
+
+  const confirmDeleteAccount = async () => {
+    try {
+      setIsDeletingAccount(true);
+
+      // Call API to delete account
+      await UserService.deleteInstructorAccount();
+
+      // Success - account deleted
+      // Use the logout function which will clear storage and navigate to login
+      await logout();
+
+      // Show success message after navigation
+      setTimeout(() => {
+        Alert.alert(
+          'Conta Excluída',
+          'Sua conta foi excluída com sucesso.',
+          [{ text: 'OK' }]
+        );
+      }, 500);
+    } catch (error: any) {
+      console.error('Delete account error:', error);
+      setIsDeletingAccount(false);
+
+      let errorMessage = 'Ocorreu um erro ao excluir a conta. Por favor, tente novamente.';
+
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (error.response?.status === 401) {
+        errorMessage = 'Sessão expirada. Por favor, faça login novamente.';
+      } else if (error.response?.status === 403) {
+        errorMessage = 'Você não tem permissão para realizar esta ação.';
+      } else if (!error.response) {
+        errorMessage = 'Erro de conexão. Verifique sua internet e tente novamente.';
+      }
+
+      Alert.alert('Erro ao Excluir Conta', errorMessage, [{ text: 'OK' }]);
+    }
   };
 
   return (
@@ -347,12 +419,22 @@ export default function CoachProfile() {
 
           <View style={styles.divider} />
 
-          <TouchableOpacity style={styles.actionItem} onPress={handleDeleteAccount}>
+          <TouchableOpacity
+            style={styles.actionItem}
+            onPress={handleDeleteAccount}
+            disabled={isDeletingAccount}
+          >
             <View style={styles.actionLeft}>
               <View style={[styles.actionIcon, { backgroundColor: Theme.colors.errorLight }]}>
-                <Ionicons name="trash-outline" size={20} color="#dc2626" />
+                {isDeletingAccount ? (
+                  <ActivityIndicator size="small" color="#dc2626" />
+                ) : (
+                  <Ionicons name="trash-outline" size={20} color="#dc2626" />
+                )}
               </View>
-              <Text style={[styles.actionText, { color: '#dc2626' }]}>Excluir Conta</Text>
+              <Text style={[styles.actionText, { color: '#dc2626' }]}>
+                {isDeletingAccount ? 'Excluindo...' : 'Excluir Conta'}
+              </Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color="#dc2626" />
           </TouchableOpacity>

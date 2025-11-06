@@ -20,7 +20,9 @@ const styles = StyleSheet.create({
         elevation: 3,
 	},
 	buttonText: {
-		color: '#fff',
+		color: Theme.screen.buttonTextColor,
+		fontWeight: '600',
+		fontSize: 16,
 	},
 })
 

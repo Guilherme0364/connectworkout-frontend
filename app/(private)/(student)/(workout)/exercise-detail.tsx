@@ -17,8 +17,8 @@ import {
   ScrollView,
   ActivityIndicator,
   Pressable,
-  Image,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { WorkoutService } from '../../../services/workout.service';
@@ -150,7 +150,7 @@ export default function ExerciseDetailScreen() {
             <Image
               source={ExerciseImageService.getImageProps(exercise.exerciseDbId, RESOLUTION.STUDENT)}
               style={styles.gif}
-              resizeMode="contain"
+              contentFit="contain"
               onError={() => setImageError(true)}
             />
           ) : (

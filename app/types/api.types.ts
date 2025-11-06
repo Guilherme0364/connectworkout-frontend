@@ -174,6 +174,37 @@ export interface TrainerRequestDto {
   createdAt: string;
 }
 
+// New invitation workflow types
+export interface InvitationDto {
+  invitationId: number;
+  instructorId: number;
+  instructorName: string;
+  instructorEmail: string;
+  instructorDescription: string;
+  instructorStudentCount: number;
+  invitedAt: string;
+}
+
+// Student info in invitation response
+export interface StudentInfo {
+  id: number;
+  name: string;
+  email: string;
+  age: number | null;
+  gender: Gender | null;
+}
+
+// Instructor invitation DTO (matches backend GET /api/instructors/invitations)
+export interface InstructorInvitationDto {
+  id: number;
+  student: StudentInfo;
+  status: 0 | 1 | 2; // 0=Pending, 1=Accepted, 2=Rejected
+  statusName: 'Pending' | 'Accepted' | 'Rejected';
+  invitedAt: string;
+  respondedAt: string | null;
+  connectedAt: string | null;
+}
+
 export interface AcceptTrainerDto {
   trainerId: number;
 }

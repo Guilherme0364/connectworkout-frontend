@@ -14,7 +14,12 @@ interface Props {
 const Button = forwardRef<View, Props>(({ children, color, text, marginTop, marginBottom, onPress }, ref) => {
 	return (
 		<Pressable
-			style={[styles.button, { backgroundColor: color }, { marginTop: marginTop }, { marginBottom: marginBottom }]}
+			style={[
+				styles.button,
+				color ? { backgroundColor: color } : {},
+				marginTop ? { marginTop } : {},
+				marginBottom ? { marginBottom } : {},
+			]}
 			onPress={onPress}
 		>
 			{children ? (

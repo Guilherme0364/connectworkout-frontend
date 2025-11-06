@@ -23,8 +23,8 @@ import {
 	Alert,
 	Platform,
 	FlatList,
-	Image,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import DayCard from '../../../components/DayCard';
@@ -274,10 +274,7 @@ export default function EditWorkout() {
 		// Debounce the API call
 		const timeout = setTimeout(async () => {
 			try {
-				console.log('🔍 Searching exercises with query:', query.trim());
 				const results = await ExerciseService.searchExercises(query.trim());
-				console.log('✅ Search results received:', results.length, 'exercises');
-				console.log('📋 First result sample:', results[0]);
 
 				setSearchResults(results);
 				setSearchError(null);
@@ -286,12 +283,7 @@ export default function EditWorkout() {
 					setSearchError('No exercises found. Try searching in English (e.g., "dumbbell", "press", "squat")');
 				}
 			} catch (error: any) {
-				console.error('❌ Search exercises error:', error);
-				console.error('Error details:', {
-					message: error.message,
-					status: error.status,
-					errors: error.errors,
-				});
+				console.error('Search exercises error:', error.message);
 				setSearchResults([]);
 				setSearchError(
 					error.message || 'Failed to search exercises. Please check your connection and try again.'
@@ -330,8 +322,7 @@ export default function EditWorkout() {
 
 			if (missingFields.length > 0) {
 				const errorMessage = `Erro: O exercício selecionado está incompleto. Campos faltando: ${missingFields.join(', ')}`;
-				console.error('❌ Missing required fields for exercise:', selectedExerciseDb);
-				console.error('❌ Missing fields:', missingFields);
+				console.error('Missing required fields for exercise:', missingFields);
 
 				if (Platform.OS === 'web') {
 					window.alert(errorMessage);
@@ -391,23 +382,11 @@ export default function EditWorkout() {
 					notes: exerciseNotes.trim() || "",
 				};
 
-				console.log('➕ Adding exercise with COMPLETE data:', exercisePayload);
-				console.log('✅ All required fields present:', {
-					exerciseDbId: !!exercisePayload.exerciseDbId,
-					name: !!exercisePayload.name,
-					bodyPart: !!exercisePayload.bodyPart,
-					equipment: !!exercisePayload.equipment,
-					gifUrl: !!exercisePayload.gifUrl,
-					sets: !!exercisePayload.sets,
-					repetitions: !!exercisePayload.repetitions,
-				});
-
 				await WorkoutService.addExercise(
 					Number(workoutId),
 					selectedDayForExercise.id,
 					exercisePayload
 				);
-				console.log('✅ Exercise added successfully');
 				showSuccess('Sucesso', 'Exercício adicionado com sucesso');
 			} else if (exerciseModalMode === 'edit' && selectedExercise) {
 				// Update existing exercise
@@ -444,7 +423,7 @@ export default function EditWorkout() {
 			// Reload workout data
 			await loadWorkout();
 		} catch (error) {
-			console.error('❌ Failed to save exercise:', error);
+			console.error('Failed to save exercise:', error);
 			handleApiError(error, 'Não foi possível salvar o exercício');
 		} finally {
 			setSavingExercise(false);
@@ -799,6 +778,7 @@ export default function EditWorkout() {
 													<Image
 														source={ExerciseImageService.getImageProps(item.id, RESOLUTION.INSTRUCTOR)}
 														style={styles.searchResultImage}
+														contentFit="cover"
 													/>
 													<View style={styles.searchResultInfo}>
 														<Text style={styles.searchResultName}>{item.name}</Text>
@@ -826,6 +806,7 @@ export default function EditWorkout() {
 											<Image
 												source={ExerciseImageService.getImageProps(selectedExerciseDb.id, RESOLUTION.INSTRUCTOR)}
 												style={styles.previewImage}
+												contentFit="cover"
 											/>
 											<View style={styles.previewInfo}>
 												<Text style={styles.previewName}>

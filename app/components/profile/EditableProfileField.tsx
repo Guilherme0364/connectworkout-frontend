@@ -39,7 +39,7 @@ export const EditableProfileField: React.FC<EditableProfileFieldProps> = ({
             ]}
             value={value}
             onChangeText={onChangeText}
-            placeholder={`Enter ${label.toLowerCase()}`}
+            placeholder={`Digite ${label.toLowerCase()}`}
             placeholderTextColor="#9ca3af"
             multiline={multiline}
             numberOfLines={numberOfLines}
@@ -50,7 +50,7 @@ export const EditableProfileField: React.FC<EditableProfileFieldProps> = ({
         </View>
       ) : (
         <Text style={[styles.value, !value && styles.emptyValue]}>
-          {value || 'Not provided'}
+          {value || 'Não informado'}
         </Text>
       )}
     </View>

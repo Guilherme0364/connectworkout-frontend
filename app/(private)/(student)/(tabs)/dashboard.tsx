@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import EmptyState from '../../../components/EmptyState';
 
 export default function StudentDashboard() {
-	const { hasTrainer, trainerRequests, dashboardData, isLoading, refreshStudentData } = useStudent();
+	const { hasTrainer, pendingInvitations, dashboardData, isLoading, refreshStudentData } = useStudent();
 	const router = useRouter();
 
 	useEffect(() => {
@@ -26,7 +26,8 @@ export default function StudentDashboard() {
 		);
 	}
 
-	const pendingRequests = trainerRequests.filter(req => req.status === 'pending');
+	// Use new invitations workflow - all invitations from this endpoint are pending
+	const pendingRequestsCount = pendingInvitations.length;
 
 	// Show empty state if student has no trainer
 	if (!hasTrainer) {
@@ -46,19 +47,19 @@ export default function StudentDashboard() {
 							iconColor="#BBF246"
 						/>
 
-						{pendingRequests.length > 0 && (
+						{pendingRequestsCount > 0 && (
 							<>
 								<View style={styles.requestsInfo}>
 									<Ionicons name="mail-outline" size={20} color="#BBF246" />
 									<Text style={styles.requestsText}>
-										Você possui {pendingRequests.length} {pendingRequests.length === 1 ? 'solicitação pendente' : 'solicitações pendentes'}
+										Você possui {pendingRequestsCount} {pendingRequestsCount === 1 ? 'convite pendente' : 'convites pendentes'}
 									</Text>
 								</View>
 								<TouchableOpacity
 									style={styles.primaryButton}
-									onPress={() => router.push('/student/personal-requests')}
+									onPress={() => router.push('/(private)/(student)/personal-requests' as any)}
 								>
-									<Text style={styles.primaryButtonText}>Ver Solicitações</Text>
+									<Text style={styles.primaryButtonText}>Ver Convites</Text>
 								</TouchableOpacity>
 							</>
 						)}
@@ -88,12 +89,13 @@ export default function StudentDashboard() {
 }
 
 function StudentDashboardWithTrainer() {
-	const { dashboardData } = useStudent();
+	const { dashboardData, pendingInvitations } = useStudent();
 	const router = useRouter();
 
 	if (!dashboardData) return null;
 
 	const { currentTrainer, workoutCount, exerciseCount, activeWorkoutId, studentName } = dashboardData;
+	const pendingRequestsCount = pendingInvitations.length;
 
 	return (
 		<SafeAreaView style={styles.container}>
@@ -175,6 +177,31 @@ function StudentDashboardWithTrainer() {
 								<Text style={styles.trainerCardValue}>{currentTrainer.studentCount} {currentTrainer.studentCount === 1 ? 'aluno' : 'alunos'}</Text>
 							</View>
 						</View>
+					</View>
+				)}
+
+				{/* Pending Invitations Card - Show even when student has trainers (supports multiple trainers) */}
+				{pendingRequestsCount > 0 && (
+					<View style={styles.invitationsCard}>
+						<View style={styles.invitationsCardHeader}>
+							<Ionicons name="mail-outline" size={24} color="#BBF246" />
+							<View style={styles.invitationsCardTitleContainer}>
+								<Text style={styles.invitationsCardTitle}>Convites Recebidos</Text>
+								<View style={styles.invitationsBadge}>
+									<Text style={styles.invitationsBadgeText}>{pendingRequestsCount}</Text>
+								</View>
+							</View>
+						</View>
+						<Text style={styles.invitationsCardDescription}>
+							Você possui {pendingRequestsCount} {pendingRequestsCount === 1 ? 'convite pendente' : 'convites pendentes'} de personal trainers
+						</Text>
+						<TouchableOpacity
+							style={styles.invitationsButton}
+							onPress={() => router.push('/(private)/(student)/personal-requests' as any)}
+						>
+							<Text style={styles.invitationsButtonText}>Ver Convites</Text>
+							<Ionicons name="chevron-forward" size={20} color="#1A1A1A" />
+						</TouchableOpacity>
 					</View>
 				)}
 
@@ -413,5 +440,69 @@ const styles = StyleSheet.create({
 	},
 	bottomSpacing: {
 		height: 20,
+	},
+	invitationsCard: {
+		backgroundColor: '#FFFFFF',
+		borderRadius: 16,
+		padding: 20,
+		marginBottom: 16,
+		shadowColor: '#000',
+		shadowOffset: { width: 0, height: 2 },
+		shadowOpacity: 0.05,
+		shadowRadius: 8,
+		elevation: 2,
+		borderLeftWidth: 4,
+		borderLeftColor: '#BBF246',
+	},
+	invitationsCardHeader: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		marginBottom: 12,
+		gap: 12,
+	},
+	invitationsCardTitleContainer: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		flex: 1,
+		gap: 8,
+	},
+	invitationsCardTitle: {
+		fontSize: 18,
+		fontWeight: '600',
+		color: '#111827',
+	},
+	invitationsBadge: {
+		backgroundColor: '#BBF246',
+		borderRadius: 12,
+		paddingHorizontal: 8,
+		paddingVertical: 2,
+		minWidth: 24,
+		alignItems: 'center',
+		justifyContent: 'center',
+	},
+	invitationsBadgeText: {
+		fontSize: 12,
+		fontWeight: '700',
+		color: '#1A1A1A',
+	},
+	invitationsCardDescription: {
+		fontSize: 14,
+		color: '#6B7280',
+		marginBottom: 16,
+		lineHeight: 20,
+	},
+	invitationsButton: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		justifyContent: 'space-between',
+		backgroundColor: '#BBF246',
+		paddingVertical: 12,
+		paddingHorizontal: 16,
+		borderRadius: 12,
+	},
+	invitationsButtonText: {
+		fontSize: 16,
+		fontWeight: '600',
+		color: '#1A1A1A',
 	},
 });

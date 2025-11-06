@@ -28,9 +28,9 @@ export type ResolutionType = typeof RESOLUTION[keyof typeof RESOLUTION];
 export class ExerciseImageService {
   /**
    * Get image URL with specified resolution
-   * URL format: https://exercisedb.p.rapidapi.com/image?exerciseId={id}&resolution={resolution}
+   * URL format: https://exercisedb.p.rapidapi.com/image?resolution={resolution}&exerciseId={id}
    *
-   * @param exerciseId - Exercise ID from ExerciseDB
+   * @param exerciseId - Exercise ID from ExerciseDB (4-digit format like "0112")
    * @param resolution - Image resolution (180, 360, 720, or 1080)
    * @returns Complete image URL with resolution parameter
    */
@@ -43,11 +43,18 @@ export class ExerciseImageService {
     }
 
     // Extract just the ID if full URL is passed
-    const id = exerciseId.includes('?')
+    let id = exerciseId.includes('?')
       ? exerciseId.split('exerciseId=')[1]?.split('&')[0]
       : exerciseId;
 
-    return `https://exercisedb.p.rapidapi.com/image?exerciseId=${id}&resolution=${resolution}`;
+    // Extract ID from old v2.exercisedb.io URLs if present
+    if (id.includes('/image/')) {
+      const parts = id.split('/image/');
+      id = parts[1] || id;
+    }
+
+    // Use the original 4-digit format (no padding needed)
+    return `https://exercisedb.p.rapidapi.com/image?resolution=${resolution}&exerciseId=${id}`;
   }
 
   /**

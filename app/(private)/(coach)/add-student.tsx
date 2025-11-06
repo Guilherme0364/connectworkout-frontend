@@ -51,21 +51,24 @@ export default function AddStudent() {
 		try {
 			setLoading(true);
 
-			// Call API
+			// Call API to send invitation
 			await InstructorService.connectWithStudent({
 				email: email.trim().toLowerCase(),
 			});
 
-			// Success
+			// Success - Navigate to pending invitations
 			showAlert(
 				'success',
-				'Aluno conectado!',
-				'Agora você pode criar treinos para este aluno.',
-				'OK',
+				'Convite enviado!',
+				'O aluno receberá o convite e poderá aceitá-lo para liberar os treinos.',
+				'Ver Convites',
 				() => {
-					router.back(); // Go back to students list
+					router.push('/(private)/(coach)/pending-invitations');
 				}
 			);
+
+			// Clear the email input
+			setEmail('');
 		} catch (error: any) {
 			console.error('Error connecting with student:', error);
 

@@ -19,24 +19,22 @@ export class ExerciseService {
   static async searchExercises(name: string): Promise<ExerciseDbModel[]> {
     try {
       const url = `${API_ENDPOINTS.EXERCISES.SEARCH}?name=${encodeURIComponent(name)}`;
-      console.log('📡 Fetching from URL:', url);
 
-      const response = await apiClient.get<{ data: ExerciseDbModel[]; total: number; limit: number; offset: number }>(url);
+      // The API client's unwrap logic (api.client.ts line 104) unwraps the response
+      // from { data: { data: [...], total, limit, offset } } all the way to the array [...]
+      // because it detects the nested 'data' property and extracts data.data
+      const response = await apiClient.get<ExerciseDbModel[] | { data: ExerciseDbModel[]; total: number; limit: number; offset: number }>(url);
 
-      console.log('📦 Raw response:', response);
-      console.log('📊 Response structure:', {
-        hasData: !!response.data,
-        dataType: Array.isArray(response.data) ? 'array' : typeof response.data,
-        dataLength: Array.isArray(response.data) ? response.data.length : 'N/A',
-        total: response.total,
-      });
+      // Handle both possible response formats for robustness:
+      // 1. If unwrapped to array directly: response = [...]
+      // 2. If unwrapped to pagination object: response = { data: [...], total, limit, offset }
+      if (Array.isArray(response)) {
+        return response;
+      } else if (response && typeof response === 'object' && 'data' in response) {
+        return response.data || [];
+      }
 
-      // Backend returns { data: [...], total: X, limit: Y, offset: Z }
-      // We need to extract the data array
-      const exercises = response.data || [];
-      console.log('✅ Extracted exercises array:', exercises.length, 'items');
-
-      return exercises;
+      return [];
     } catch (error) {
       console.error('Search exercises error:', error);
       throw error;

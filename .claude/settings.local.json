@@ -47,7 +47,17 @@
       "Bash(npm start:*)",
       "Bash(find:*)",
       "Bash(realpath:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(nul)",
+      "Bash(dotnet build:*)",
+      "Bash(taskkill:*)",
+      "Bash(start cmd /c \"dotnet run\")",
+      "Bash(timeout /t 5 /nobreak)",
+      "Bash(curl:*)",
+      "Bash(npx expo install:*)",
+      "Bash(npm uninstall:*)",
+      "Bash(npm cache clean:*)",
+      "Bash(dir:*)"
     ],
     "deny": [],
     "ask": []
